@@ -1,0 +1,170 @@
+// Jenkins Pipeline for Azure DevOps OnPrem Mobile App
+// Flutter Android build and deployment
+
+pipeline {
+    agent any
+    
+    tools {
+        jdk 'JDK-17'
+    }
+    
+    environment {
+        FLUTTER_VERSION = '3.24.0'
+        JAVA_HOME = tool('JDK-17')
+        ANDROID_HOME = "${env.WORKSPACE}/android-sdk"
+        PATH = "${env.JAVA_HOME}/bin:${env.ANDROID_HOME}/tools:${env.ANDROID_HOME}/platform-tools:${env.PATH}"
+    }
+    
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 60, unit: 'MINUTES')
+        timestamps()
+        ansiColor('xterm')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.GIT_COMMIT_SHORT = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+                    env.BUILD_NUMBER_SHORT = "${env.BUILD_NUMBER}"
+                }
+            }
+        }
+        
+        stage('Setup Flutter') {
+            steps {
+                script {
+                    def flutterHome = "${env.WORKSPACE}/flutter"
+                    if (!fileExists("${flutterHome}/bin/flutter")) {
+                        sh """
+                            git clone https://github.com/flutter/flutter.git -b ${env.FLUTTER_VERSION} --depth 1 ${flutterHome}
+                        """
+                    }
+                    env.PATH = "${flutterHome}/bin:${env.PATH}"
+                }
+                sh 'flutter --version'
+                sh 'flutter doctor -v'
+            }
+        }
+        
+        stage('Dependencies') {
+            steps {
+                sh 'flutter pub get'
+            }
+        }
+        
+        stage('Test') {
+            parallel {
+                stage('Lint') {
+                    steps {
+                        sh 'flutter analyze'
+                    }
+                }
+                stage('Unit Tests') {
+                    steps {
+                        sh 'flutter test'
+                    }
+                }
+            }
+        }
+        
+        stage('Build APK') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                    tag pattern: 'v.*', comparator: 'REGEXP'
+                }
+            }
+            steps {
+                sh 'flutter build apk --release'
+                archiveArtifacts artifacts: 'build/app/outputs/flutter-apk/app-release.apk', fingerprint: true
+            }
+        }
+        
+        stage('Build AAB') {
+            when {
+                anyOf {
+                    branch 'main'
+                    tag pattern: 'v.*', comparator: 'REGEXP'
+                }
+            }
+            steps {
+                sh 'flutter build appbundle --release'
+                archiveArtifacts artifacts: 'build/app/outputs/bundle/release/app-release.aab', fingerprint: true
+            }
+        }
+        
+        stage('Deploy Beta') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                script {
+                    if (env.DEPLOY_BETA == 'true') {
+                        sh '''
+                            gem install fastlane
+                            fastlane android beta
+                        '''
+                    } else {
+                        echo 'Beta deployment skipped. Set DEPLOY_BETA=true to deploy.'
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy Production') {
+            when {
+                anyOf {
+                    branch 'main'
+                    tag pattern: 'v.*', comparator: 'REGEXP'
+                }
+            }
+            steps {
+                script {
+                    if (env.DEPLOY_PRODUCTION == 'true') {
+                        input message: 'Deploy to Production?', ok: 'Deploy'
+                        sh '''
+                            gem install fastlane
+                            fastlane android release
+                        '''
+                    } else {
+                        echo 'Production deployment skipped. Set DEPLOY_PRODUCTION=true to deploy.'
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            script {
+                def apkPath = 'build/app/outputs/flutter-apk/app-release.apk'
+                def aabPath = 'build/app/outputs/bundle/release/app-release.aab'
+                
+                if (fileExists(apkPath)) {
+                    echo "APK built successfully: ${apkPath}"
+                }
+                if (fileExists(aabPath)) {
+                    echo "AAB built successfully: ${aabPath}"
+                }
+            }
+        }
+        failure {
+            emailext (
+                subject: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build failed. Check console output: ${env.BUILD_URL}",
+                to: "${env.CHANGE_AUTHOR_EMAIL ?: 'devops@example.com'}"
+            )
+        }
+    }
+}
+

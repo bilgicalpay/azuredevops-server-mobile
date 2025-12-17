@@ -1,0 +1,77 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<!-- Jenkins Job Configuration Template -->
+<!-- Bu dosya Jenkins job yapılandırması için referans olarak kullanılabilir -->
+<job>
+  <actions/>
+  <description>Azure DevOps OnPrem Mobile App - Flutter Android Build Pipeline</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.BooleanParameterDefinition>
+          <name>DEPLOY_BETA</name>
+          <description>Deploy to beta environment</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>DEPLOY_PRODUCTION</name>
+          <description>Deploy to production environment</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>FLUTTER_VERSION</name>
+          <description>Flutter SDK version</description>
+          <defaultValue>3.24.0</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.11.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>YOUR_GIT_REPOSITORY_URL</url>
+        <credentialsId>YOUR_CREDENTIALS_ID</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/main</name>
+      </hudson.plugins.git.BranchSpec>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/develop</name>
+      </hudson.plugins.git.BranchSpec>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/tags/*</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="empty-list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.SCMTrigger>
+      <spec>H/15 * * * *</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <javaposse.jobdsl.plugin.ExecuteDslScripts plugin="job-dsl@1.77">
+      <targets>Jenkinsfile</targets>
+      <usingScriptText>false</usingScriptText>
+      <ignoreExisting>false</ignoreExisting>
+      <removedJobAction>DELETE</removedJobAction>
+      <removedViewAction>DELETE</removedViewAction>
+      <removedConfigFilesAction>DELETE</removedConfigFilesAction>
+      <lookupStrategy>JENKINS_ROOT</lookupStrategy>
+    </javaposse.jobdsl.plugin.ExecuteDslScripts>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</job>
+

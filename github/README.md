@@ -11,6 +11,7 @@ Ana build ve deploy workflow'u:
 - **Build AAB** - App Bundle oluşturma (tag'ler için)
 - **Deploy Beta** - Beta ortamına deploy
 - **Deploy Production** - Production ortamına deploy
+- **Create Release** - GitHub Release oluşturma (tag'ler için, APK ve AAB dosyaları ile)
 
 ### 2. fastlane-deploy.yml
 Manuel Fastlane deployment workflow'u:
@@ -136,9 +137,58 @@ permissions:
   packages: write
 ```
 
+## GitHub Release
+
+### Otomatik Release Oluşturma
+
+Tag oluşturulduğunda otomatik olarak GitHub Release oluşturulur:
+
+```bash
+# Tag oluştur ve push et
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Workflow şunları yapar:
+1. APK ve AAB dosyalarını build eder
+2. Dosyaları versiyon numarası ile yeniden adlandırır
+3. GitHub Release oluşturur
+4. APK ve AAB dosyalarını release asset olarak ekler
+5. Release notes oluşturur
+
+### Release İndirme
+
+Release'ler GitHub repository'nin "Releases" sayfasından indirilebilir:
+
+1. GitHub repository'de "Releases" sekmesine gidin
+2. İstediğiniz versiyonu seçin
+3. "Assets" bölümünden APK veya AAB dosyasını indirin
+
+**Örnek URL formatı:**
+```
+https://github.com/USERNAME/REPO/releases/download/v1.0.0/azuredevops-onprem-v1.0.0.apk
+https://github.com/USERNAME/REPO/releases/download/v1.0.0/azuredevops-onprem-v1.0.0.aab
+```
+
+### Release Notes
+
+Her release otomatik olarak şu bilgileri içerir:
+- Versiyon numarası
+- Build tarihi
+- Commit hash
+- İndirme linkleri
+- Kurulum talimatları
+
+### Release Dosya İsimleri
+
+Dosyalar otomatik olarak şu formatta adlandırılır:
+- APK: `azuredevops-onprem-v1.0.0.apk`
+- AAB: `azuredevops-onprem-v1.0.0.aab`
+
 ## Notlar
 
 - Pull request'lerde sadece test çalışır, build yapılmaz
 - Production deploy için tag gereklidir
 - Environment protection ile production deploy onayı zorunlu kılınabilir
+- Tag oluşturulduğunda otomatik olarak GitHub Release oluşturulur
 

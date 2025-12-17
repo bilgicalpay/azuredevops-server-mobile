@@ -141,10 +141,24 @@ Job parametreleri:
 ### APK
 - Path: `build/app/outputs/flutter-apk/app-release.apk`
 - Kullanım: Manuel dağıtım, internal testing
+- **GitHub Release**: Tag oluşturulduğunda otomatik olarak GitHub Release'e eklenir
 
 ### AAB (App Bundle)
 - Path: `build/app/outputs/bundle/release/app-release.aab`
 - Kullanım: Google Play Store upload
+- **GitHub Release**: Tag oluşturulduğunda otomatik olarak GitHub Release'e eklenir
+
+### GitHub Release Assets
+
+Tag oluşturulduğunda (örn: `v1.0.0`), dosyalar otomatik olarak şu formatta adlandırılır ve GitHub Release'e eklenir:
+- APK: `azuredevops-onprem-v1.0.0.apk`
+- AAB: `azuredevops-onprem-v1.0.0.aab`
+
+**İndirme URL formatı:**
+```
+https://github.com/USERNAME/REPO/releases/download/v1.0.0/azuredevops-onprem-v1.0.0.apk
+https://github.com/USERNAME/REPO/releases/download/v1.0.0/azuredevops-onprem-v1.0.0.aab
+```
 
 ## 🚢 Deployment
 
@@ -185,7 +199,12 @@ git push origin v1.0.0
 # Tag oluştur
 git tag v1.0.0
 git push origin v1.0.0
-# Actions'da deploy-production job'u çalışır (environment protection ile)
+# Actions otomatik olarak:
+# 1. Build APK ve AAB
+# 2. GitHub Release oluşturur
+# 3. APK ve AAB dosyalarını release asset olarak ekler
+# 4. Release notes oluşturur
+# 5. deploy-production job'u çalışır (environment protection ile)
 ```
 
 **Jenkins:**

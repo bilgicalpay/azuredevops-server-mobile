@@ -17,6 +17,8 @@ class StorageService extends ChangeNotifier {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true, // Android EncryptedSharedPreferences kullan
+      sharedPreferencesName: 'FlutterSecureStorage',
+      preferencesKeyPrefix: 'flutter_secure_storage_',
     ),
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device, // iOS Keychain kullan

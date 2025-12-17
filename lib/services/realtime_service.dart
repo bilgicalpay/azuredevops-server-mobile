@@ -212,27 +212,60 @@ class RealtimeService {
     AuthService authService,
     StorageService storageService,
   ) async {
-    // Initial check
-    await _checkForNewWorkItems(authService, storageService);
+    // Initialize tracking with current work items (without sending notifications)
+    print('🔄 [RealtimeService] Initializing tracking...');
+    await _initializeTracking(authService, storageService);
     
     // Start polling timer - this will continue even when app is in background
-    // Poll every 1 minute for faster updates
+    // Poll every 30 seconds for faster updates
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (!_shouldReconnect) {
         timer.cancel();
         return;
       }
       
       try {
+        print('🔄 [RealtimeService] Polling check started...');
         await _checkForNewWorkItems(authService, storageService);
       } catch (e) {
-        print('Background polling error: $e');
+        print('❌ [RealtimeService] Background polling error: $e');
         // Continue polling even if there's an error
       }
     });
     
-    print('Background polling started (1 minute intervals)');
+    print('✅ [RealtimeService] Background polling started (30 second intervals)');
+  }
+
+  /// Initialize tracking with current work items (without notifications)
+  Future<void> _initializeTracking(
+    AuthService authService,
+    StorageService storageService,
+  ) async {
+    try {
+      if (authService.serverUrl == null || authService.token == null) {
+        print('⚠️ [RealtimeService] Cannot initialize: missing auth');
+        return;
+      }
+
+      final workItems = await _workItemService.getWorkItems(
+        serverUrl: authService.serverUrl!,
+        token: authService.token!,
+        collection: storageService.getCollection(),
+      );
+
+      // Initialize tracking for all current work items (without notifications)
+      for (var workItem in workItems) {
+        _knownWorkItemIds.add(workItem.id);
+        _workItemRevisions[workItem.id] = workItem.rev ?? 0;
+        _workItemAssignees[workItem.id] = workItem.assignedTo;
+        _workItemChangedDates[workItem.id] = workItem.changedDate;
+      }
+
+      print('✅ [RealtimeService] Tracking initialized for ${workItems.length} work items');
+    } catch (e) {
+      print('❌ [RealtimeService] Error initializing tracking: $e');
+    }
   }
 
   /// Check for new work items and changes (optimized)
@@ -242,15 +275,19 @@ class RealtimeService {
   ) async {
     try {
       if (authService.serverUrl == null || authService.token == null) {
+        print('⚠️ [RealtimeService] Cannot check: missing auth');
         return false;
       }
 
+      print('🔄 [RealtimeService] Fetching work items...');
       // Use optimized query: only get IDs and changed date
       final workItems = await _workItemService.getWorkItems(
         serverUrl: authService.serverUrl!,
         token: authService.token!,
         collection: storageService.getCollection(),
       );
+
+      print('📊 [RealtimeService] Found ${workItems.length} work items, tracking ${_knownWorkItemIds.length}');
 
       final newIds = <int>[];
       final changedIds = <int>[];
@@ -266,6 +303,7 @@ class RealtimeService {
         
         if (!_knownWorkItemIds.contains(workItem.id)) {
           // New work item - just assigned to user
+          print('🆕 [RealtimeService] New work item detected: #${workItem.id} - ${workItem.title}');
           newIds.add(workItem.id);
           _knownWorkItemIds.add(workItem.id);
           _workItemRevisions[workItem.id] = currentRev;
@@ -287,6 +325,7 @@ class RealtimeService {
           if (knownRev != null && currentRev > knownRev) {
             hasChanged = true;
             _workItemRevisions[workItem.id] = currentRev;
+            print('📝 [RealtimeService] Work item #${workItem.id} revision changed: $knownRev -> $currentRev');
           }
           
           // Check assignee change (important!)
@@ -294,6 +333,7 @@ class RealtimeService {
             hasChanged = true;
             assigneeChanged = true;
             assigneeChangedIds.add(workItem.id);
+            print('👤 [RealtimeService] Work item #${workItem.id} assignee changed: $knownAssignee -> $currentAssignee');
             if (currentAssignee != null && currentAssignee.isNotEmpty) {
               changeMessage = 'Work item size atandı: ${workItem.type}';
             } else {
@@ -310,6 +350,7 @@ class RealtimeService {
                 changeMessage = 'Work item güncellendi: ${workItem.state}';
               }
               _workItemChangedDates[workItem.id] = currentChangedDate;
+              print('📅 [RealtimeService] Work item #${workItem.id} changed date updated');
             }
           } else if (currentChangedDate != null) {
             _workItemChangedDates[workItem.id] = currentChangedDate;
@@ -317,6 +358,7 @@ class RealtimeService {
           
           if (hasChanged) {
             changedIds.add(workItem.id);
+            print('🔄 [RealtimeService] Work item #${workItem.id} changed, sending notification');
             
             // Send notification with appropriate message
             await _notificationService.showWorkItemNotification(
@@ -342,6 +384,7 @@ class RealtimeService {
       }
 
       // Update known IDs (remove items that are no longer assigned)
+      final previousKnownCount = _knownWorkItemIds.length;
       _knownWorkItemIds = workItems.map((item) => item.id).toSet();
       
       // Remove tracking data for items no longer assigned
@@ -352,14 +395,18 @@ class RealtimeService {
       // Always call callback if there are changes - this ensures UI updates
       if (newIds.isNotEmpty || changedIds.isNotEmpty || assigneeChangedIds.isNotEmpty) {
         final allChangedIds = <int>{...newIds, ...changedIds, ...assigneeChangedIds};
-        print('🔄 [RealtimeService] Detected changes: ${allChangedIds.length} work items (new: ${newIds.length}, changed: ${changedIds.length}, assignee changed: ${assigneeChangedIds.length})');
+        print('✅ [RealtimeService] Detected changes: ${allChangedIds.length} work items (new: ${newIds.length}, changed: ${changedIds.length}, assignee changed: ${assigneeChangedIds.length})');
+        print('📞 [RealtimeService] Calling onNewWorkItems callback with ${allChangedIds.length} items');
         onNewWorkItems?.call(allChangedIds.toList());
         return true;
+      } else {
+        print('ℹ️ [RealtimeService] No changes detected (tracking ${_knownWorkItemIds.length} items)');
       }
 
       return false;
-    } catch (e) {
-      print('Check for new work items error: $e');
+    } catch (e, stackTrace) {
+      print('❌ [RealtimeService] Check for new work items error: $e');
+      print('❌ [RealtimeService] Stack trace: $stackTrace');
       onError?.call('Error checking work items: $e');
       return false;
     }

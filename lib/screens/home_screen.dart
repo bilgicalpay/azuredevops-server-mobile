@@ -88,8 +88,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final authService = Provider.of<AuthService>(context, listen: false);
     final storage = Provider.of<StorageService>(context, listen: false);
     
+    print('🚀 [HomeScreen] Starting realtime service...');
+    
     // Start real-time service (WebSocket with polling fallback)
-    // Polling interval: 1 minute for faster updates
+    // Polling interval: 30 seconds for faster updates
     RealtimeService().start(
       authService: authService,
       storageService: storage,
@@ -99,30 +101,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         if (mounted) {
           // Force immediate refresh
           _loadWorkItems().then((_) {
+            print('✅ [HomeScreen] Work items list refreshed');
             if (mounted && changedIds.isNotEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('${changedIds.length} work item güncellendi'),
-                  duration: const Duration(seconds: 2),
+                  duration: const Duration(seconds: 3),
                   action: SnackBarAction(
                     label: 'Yenile',
-                    onPressed: _loadWorkItems,
+                    onPressed: () {
+                      _loadWorkItems();
+                    },
                   ),
                 ),
               );
             }
+          }).catchError((error) {
+            print('❌ [HomeScreen] Error refreshing work items: $error');
           });
+        } else {
+          print('⚠️ [HomeScreen] Widget not mounted, skipping refresh');
         }
       },
       onError: (error) {
-        print('Realtime service error: $error');
+        print('❌ [HomeScreen] Realtime service error: $error');
         // Don't show error to user - service will retry automatically
       },
       onConnected: () {
-        print('Realtime service connected');
+        print('✅ [HomeScreen] Realtime service connected');
       },
       onDisconnected: () {
-        print('Realtime service disconnected');
+        print('⚠️ [HomeScreen] Realtime service disconnected');
         // Service will automatically reconnect
       },
     );

@@ -132,4 +132,4 @@ Bu uygulama kurumsal kullanım için geliştirilmiştir.
 ---
 
 **Geliştirici:** Alpay Bilgiç  
-**Son Güncelleme:** 2024
+**Son Güncelleme:** 2025 17 Aralık

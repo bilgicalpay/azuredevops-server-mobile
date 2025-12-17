@@ -70,6 +70,14 @@ echo "✅ Updated pubspec.yaml to version $NEW_VERSION"
 # Git operations
 git add pubspec.yaml
 git commit -m "chore(release): Bump version to $NEW_VERSION [skip ci]"
+
+# Check if tag already exists
+if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+  echo "⚠️  Tag $NEW_TAG already exists. Deleting and recreating..."
+  git tag -d "$NEW_TAG"
+  git push origin :refs/tags/"$NEW_TAG" 2>/dev/null || true
+fi
+
 git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
 
 echo "✅ Created git commit and tag $NEW_TAG"

@@ -186,47 +186,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              height: 32,
-              child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return const SizedBox.shrink();
-                },
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 32,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'AzureDevOps',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'AzureDevOps',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            // Version display below logo
+            if (_appVersion.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  _appVersion,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
-          // Version display in top right
-          if (_appVersion.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0, top: 8.0, bottom: 8.0),
-              child: Center(
-                child: Text(
-                  _appVersion,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
           IconButton(
             icon: const Icon(Icons.query_stats),
             onPressed: () {

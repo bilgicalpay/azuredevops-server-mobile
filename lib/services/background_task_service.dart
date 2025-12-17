@@ -23,6 +23,8 @@ class BackgroundTaskService {
   final WorkItemService _workItemService = WorkItemService();
   final NotificationService _notificationService = NotificationService();
   Map<int, int> _workItemRevisions = {};
+  Map<int, String?> _workItemAssignees = {}; // Track assignees to detect assignee changes
+  Map<int, DateTime?> _workItemChangedDates = {}; // Track changed dates for better change detection
   Set<int> _knownWorkItemIds = {};
   Set<int> _notifiedWorkItemIds = {}; // Track which work items we've already notified about
 
@@ -42,9 +44,9 @@ class BackgroundTaskService {
     // Initial check
     await _checkForChanges();
     
-    // Start periodic checks - every 2 minutes
+    // Start periodic checks - every 1 minute for faster updates
     _backgroundTimer?.cancel();
-    _backgroundTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
+    _backgroundTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
       if (!_isRunning) {
         timer.cancel();
         return;
@@ -89,13 +91,19 @@ class BackgroundTaskService {
       for (var workItem in workItems) {
         final currentRev = workItem.rev ?? 0;
         final knownRev = _workItemRevisions[workItem.id];
+        final currentAssignee = workItem.assignedTo;
+        final knownAssignee = _workItemAssignees[workItem.id];
+        final currentChangedDate = workItem.changedDate;
+        final knownChangedDate = _workItemChangedDates[workItem.id];
         
         if (!_knownWorkItemIds.contains(workItem.id)) {
-          // New work item - this is truly new (not in our tracking)
+          // New work item - just assigned to user
           _knownWorkItemIds.add(workItem.id);
           _workItemRevisions[workItem.id] = currentRev;
+          _workItemAssignees[workItem.id] = currentAssignee;
+          _workItemChangedDates[workItem.id] = currentChangedDate;
           
-          // Always notify for new work items (they're not in _notifiedWorkItemIds yet)
+          // Always notify for new work items
           await _notificationService.showWorkItemNotification(
             workItemId: workItem.id,
             title: workItem.title,
@@ -104,33 +112,88 @@ class BackgroundTaskService {
           _notifiedWorkItemIds.add(workItem.id);
           await _saveLastNotifiedRevision(workItem.id, currentRev);
           print('Background: New work item #${workItem.id} - notification sent');
-        } else if (knownRev != null && currentRev > knownRev) {
-          // Work item changed - check if we've already notified for this revision
-          final lastNotifiedRev = await _getLastNotifiedRevision(workItem.id);
+        } else {
+          // Check for changes
+          bool shouldNotify = false;
+          String notificationBody = '';
           
-          if (lastNotifiedRev == null || currentRev > lastNotifiedRev) {
-            _workItemRevisions[workItem.id] = currentRev;
+          // Check assignee change (highest priority - always notify)
+          if (knownAssignee != currentAssignee) {
+            shouldNotify = true;
+            if (currentAssignee != null && currentAssignee.isNotEmpty) {
+              notificationBody = 'Work item size atandı: ${workItem.type}';
+            } else {
+              notificationBody = 'Work item ataması kaldırıldı';
+            }
+            _workItemAssignees[workItem.id] = currentAssignee;
+            print('Background: Work item #${workItem.id} assignee changed: $knownAssignee -> $currentAssignee');
+          }
+          
+          // Check revision change
+          if (knownRev != null && currentRev > knownRev) {
+            final lastNotifiedRev = await _getLastNotifiedRevision(workItem.id);
             
+            if (lastNotifiedRev == null || currentRev > lastNotifiedRev) {
+              shouldNotify = true;
+              if (notificationBody.isEmpty) {
+                notificationBody = 'Work item güncellendi: ${workItem.state}';
+              }
+              _workItemRevisions[workItem.id] = currentRev;
+              print('Background: Work item #${workItem.id} revision changed: $knownRev -> $currentRev');
+            }
+          }
+          
+          // Check changed date (more reliable for some changes)
+          if (currentChangedDate != null && knownChangedDate != null) {
+            if (currentChangedDate.isAfter(knownChangedDate)) {
+              final lastNotifiedRev = await _getLastNotifiedRevision(workItem.id);
+              
+              // Only notify if we haven't already notified for this change
+              if (lastNotifiedRev == null || (workItem.rev ?? 0) > lastNotifiedRev) {
+                shouldNotify = true;
+                if (notificationBody.isEmpty) {
+                  notificationBody = 'Work item güncellendi: ${workItem.state}';
+                }
+              }
+              _workItemChangedDates[workItem.id] = currentChangedDate;
+              print('Background: Work item #${workItem.id} changed date updated: $knownChangedDate -> $currentChangedDate');
+            }
+          } else if (currentChangedDate != null) {
+            _workItemChangedDates[workItem.id] = currentChangedDate;
+          }
+          
+          if (shouldNotify) {
             await _notificationService.showWorkItemNotification(
               workItemId: workItem.id,
               title: workItem.title,
-              body: 'Work item güncellendi: ${workItem.state}',
+              body: notificationBody,
             );
             
             await _saveLastNotifiedRevision(workItem.id, currentRev);
-            print('Background: Work item #${workItem.id} changed (rev: $knownRev -> $currentRev) - notification sent');
-          } else {
-            print('Background: Work item #${workItem.id} changed but already notified for rev $currentRev (last notified: $lastNotifiedRev)');
+            _notifiedWorkItemIds.add(workItem.id);
+            print('Background: Work item #${workItem.id} - notification sent: $notificationBody');
           }
-        } else if (knownRev == null) {
-          // First time seeing this work item in tracking
-          _workItemRevisions[workItem.id] = currentRev;
+          
+          // Update tracking even if no notification sent
+          if (knownRev == null) {
+            _workItemRevisions[workItem.id] = currentRev;
+          }
+          if (knownAssignee == null) {
+            _workItemAssignees[workItem.id] = currentAssignee;
+          }
+          if (knownChangedDate == null && currentChangedDate != null) {
+            _workItemChangedDates[workItem.id] = currentChangedDate;
+          }
         }
       }
 
       // Update known IDs
       _knownWorkItemIds = workItems.map((item) => item.id).toSet();
+      
+      // Remove tracking data for items no longer assigned
       _workItemRevisions.removeWhere((id, _) => !_knownWorkItemIds.contains(id));
+      _workItemAssignees.removeWhere((id, _) => !_knownWorkItemIds.contains(id));
+      _workItemChangedDates.removeWhere((id, _) => !_knownWorkItemIds.contains(id));
       
     } catch (e) {
       print('Background check error: $e');
@@ -161,6 +224,8 @@ class BackgroundTaskService {
   void reset() {
     _knownWorkItemIds.clear();
     _workItemRevisions.clear();
+    _workItemAssignees.clear();
+    _workItemChangedDates.clear();
     _notifiedWorkItemIds.clear();
   }
 
@@ -191,6 +256,8 @@ class BackgroundTaskService {
       for (var workItem in workItems) {
         _knownWorkItemIds.add(workItem.id);
         _workItemRevisions[workItem.id] = workItem.rev ?? 0;
+        _workItemAssignees[workItem.id] = workItem.assignedTo;
+        _workItemChangedDates[workItem.id] = workItem.changedDate;
         
         // Load last notified revision from storage
         final lastNotifiedRev = await _getLastNotifiedRevision(workItem.id);

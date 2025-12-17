@@ -204,6 +204,8 @@ class RealtimeService {
 
   Timer? _pollingTimer;
   Map<int, int> _workItemRevisions = {}; // Track revisions to detect changes
+  Map<int, String?> _workItemAssignees = {}; // Track assignees to detect assignee changes
+  Map<int, DateTime?> _workItemChangedDates = {}; // Track changed dates for better change detection
   
   /// Optimized polling fallback - works in background
   Future<void> _startOptimizedPolling(
@@ -214,8 +216,9 @@ class RealtimeService {
     await _checkForNewWorkItems(authService, storageService);
     
     // Start polling timer - this will continue even when app is in background
+    // Poll every 1 minute for faster updates
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
+    _pollingTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
       if (!_shouldReconnect) {
         timer.cancel();
         return;
@@ -229,7 +232,7 @@ class RealtimeService {
       }
     });
     
-    print('Background polling started (2 minute intervals)');
+    print('Background polling started (1 minute intervals)');
   }
 
   /// Check for new work items and changes (optimized)
@@ -251,43 +254,100 @@ class RealtimeService {
 
       final newIds = <int>[];
       final changedIds = <int>[];
+      final assigneeChangedIds = <int>[];
       
       for (var workItem in workItems) {
         final currentRev = workItem.rev ?? 0;
         final knownRev = _workItemRevisions[workItem.id];
+        final currentAssignee = workItem.assignedTo;
+        final knownAssignee = _workItemAssignees[workItem.id];
+        final currentChangedDate = workItem.changedDate;
+        final knownChangedDate = _workItemChangedDates[workItem.id];
         
         if (!_knownWorkItemIds.contains(workItem.id)) {
-          // New work item
+          // New work item - just assigned to user
           newIds.add(workItem.id);
           _knownWorkItemIds.add(workItem.id);
           _workItemRevisions[workItem.id] = currentRev;
+          _workItemAssignees[workItem.id] = currentAssignee;
+          _workItemChangedDates[workItem.id] = currentChangedDate;
           
           await _notificationService.showWorkItemNotification(
             workItemId: workItem.id,
             title: workItem.title,
             body: 'Size yeni bir work item atandı: ${workItem.type}',
           );
-        } else if (knownRev != null && currentRev > knownRev) {
-          // Work item changed
-          changedIds.add(workItem.id);
-          _workItemRevisions[workItem.id] = currentRev;
+        } else {
+          // Check for changes
+          bool hasChanged = false;
+          bool assigneeChanged = false;
+          String changeMessage = '';
           
-          await _notificationService.showWorkItemNotification(
-            workItemId: workItem.id,
-            title: workItem.title,
-            body: 'Work item güncellendi: ${workItem.state}',
-          );
-        } else if (knownRev == null) {
-          // First time tracking this item
-          _workItemRevisions[workItem.id] = currentRev;
+          // Check revision change
+          if (knownRev != null && currentRev > knownRev) {
+            hasChanged = true;
+            _workItemRevisions[workItem.id] = currentRev;
+          }
+          
+          // Check assignee change (important!)
+          if (knownAssignee != currentAssignee) {
+            hasChanged = true;
+            assigneeChanged = true;
+            assigneeChangedIds.add(workItem.id);
+            if (currentAssignee != null && currentAssignee.isNotEmpty) {
+              changeMessage = 'Work item size atandı: ${workItem.type}';
+            } else {
+              changeMessage = 'Work item ataması kaldırıldı';
+            }
+            _workItemAssignees[workItem.id] = currentAssignee;
+          }
+          
+          // Check changed date (more reliable than revision for some changes)
+          if (currentChangedDate != null && knownChangedDate != null) {
+            if (currentChangedDate.isAfter(knownChangedDate)) {
+              hasChanged = true;
+              if (!assigneeChanged) {
+                changeMessage = 'Work item güncellendi: ${workItem.state}';
+              }
+              _workItemChangedDates[workItem.id] = currentChangedDate;
+            }
+          } else if (currentChangedDate != null) {
+            _workItemChangedDates[workItem.id] = currentChangedDate;
+          }
+          
+          if (hasChanged) {
+            changedIds.add(workItem.id);
+            
+            // Send notification with appropriate message
+            await _notificationService.showWorkItemNotification(
+              workItemId: workItem.id,
+              title: workItem.title,
+              body: changeMessage.isNotEmpty 
+                  ? changeMessage 
+                  : 'Work item güncellendi: ${workItem.state}',
+            );
+          }
+          
+          // Update tracking even if no change detected (to keep data fresh)
+          if (knownRev == null) {
+            _workItemRevisions[workItem.id] = currentRev;
+          }
+          if (knownAssignee == null) {
+            _workItemAssignees[workItem.id] = currentAssignee;
+          }
+          if (knownChangedDate == null && currentChangedDate != null) {
+            _workItemChangedDates[workItem.id] = currentChangedDate;
+          }
         }
       }
 
       // Update known IDs (remove items that are no longer assigned)
       _knownWorkItemIds = workItems.map((item) => item.id).toSet();
       
-      // Remove revisions for items no longer assigned
+      // Remove tracking data for items no longer assigned
       _workItemRevisions.removeWhere((id, _) => !_knownWorkItemIds.contains(id));
+      _workItemAssignees.removeWhere((id, _) => !_knownWorkItemIds.contains(id));
+      _workItemChangedDates.removeWhere((id, _) => !_knownWorkItemIds.contains(id));
 
       if (newIds.isNotEmpty || changedIds.isNotEmpty) {
         onNewWorkItems?.call([...newIds, ...changedIds]);
@@ -326,6 +386,8 @@ class RealtimeService {
   void reset() {
     _knownWorkItemIds.clear();
     _workItemRevisions.clear();
+    _workItemAssignees.clear();
+    _workItemChangedDates.clear();
   }
 }
 

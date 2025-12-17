@@ -79,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final storage = Provider.of<StorageService>(context, listen: false);
     
     // Start real-time service (WebSocket with polling fallback)
+    // Polling interval: 1 minute for faster updates
     RealtimeService().start(
       authService: authService,
       storageService: storage,
@@ -86,26 +87,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         // Refresh work items when new ones are detected
         if (mounted) {
           _loadWorkItems();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${newIds.length} work item güncellendi'),
-              action: SnackBarAction(
-                label: 'Yenile',
-                onPressed: _loadWorkItems,
-              ),
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          // Show notification in app (silent update, no snackbar to avoid spam)
+          // Work items are automatically refreshed in the list
         }
       },
       onError: (error) {
         print('Realtime service error: $error');
+        // Don't show error to user - service will retry automatically
       },
       onConnected: () {
         print('Realtime service connected');
       },
       onDisconnected: () {
         print('Realtime service disconnected');
+        // Service will automatically reconnect
       },
     );
   }

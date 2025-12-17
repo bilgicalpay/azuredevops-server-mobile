@@ -44,9 +44,9 @@ class BackgroundTaskService {
     // Initial check
     await _checkForChanges();
     
-    // Start periodic checks - every 1 minute for faster updates
+    // Start periodic checks - every 30 seconds for faster updates
     _backgroundTimer?.cancel();
-    _backgroundTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+    _backgroundTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (!_isRunning) {
         timer.cancel();
         return;

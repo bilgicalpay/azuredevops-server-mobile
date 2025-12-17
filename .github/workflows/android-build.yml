@@ -26,6 +26,7 @@ on:
           - major
         default: patch
 
+
 jobs:
   test:
     name: Test

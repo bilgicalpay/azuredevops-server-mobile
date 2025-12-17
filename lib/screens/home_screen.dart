@@ -69,18 +69,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final storage = Provider.of<StorageService>(context, listen: false);
+    
     if (state == AppLifecycleState.resumed) {
-      // App came to foreground - refresh data
+      // App came to foreground - refresh data and restart services
+      print('🔄 [HomeScreen] App resumed, refreshing and restarting services...');
       _loadWorkItems();
+      // Restart realtime service to ensure it's running
+      _startRealtimeService();
       // Ensure background service is running
       BackgroundTaskService().start();
     } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       // App went to background - ensure services keep running
-      print('App went to background, services should continue');
+      print('🔄 [HomeScreen] App went to background, ensuring services continue...');
+      // Restart realtime service to ensure it continues in background
+      _startRealtimeService();
       BackgroundTaskService().start();
     } else if (state == AppLifecycleState.detached) {
       // App is being terminated - services will continue if started
-      print('App detached, background services should continue');
+      print('⚠️ [HomeScreen] App detached, services should continue');
     }
   }
 

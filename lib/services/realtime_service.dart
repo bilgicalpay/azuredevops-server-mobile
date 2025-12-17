@@ -49,6 +49,8 @@ class RealtimeService {
     Function()? onDisconnected,
   }) async {
     print('🚀 [RealtimeService] Starting service...');
+    
+    // Update callbacks even if already running
     this.onNewWorkItems = onNewWorkItems;
     this.onError = onError;
     this.onConnected = onConnected;
@@ -60,6 +62,13 @@ class RealtimeService {
     if (authService.serverUrl == null || authService.token == null) {
       print('❌ [RealtimeService] Cannot start: missing auth data');
       onError?.call('Missing authentication data');
+      return;
+    }
+    
+    // If polling is already running, just update callbacks and continue
+    if (_pollingTimer != null && _pollingTimer!.isActive) {
+      print('ℹ️ [RealtimeService] Polling already running, updating callbacks only');
+      onConnected?.call();
       return;
     }
     
@@ -232,11 +241,11 @@ class RealtimeService {
     await _initializeTracking(authService, storageService);
     
     // Start polling timer - this will continue even when app is in background
-    // Poll every 30 seconds for faster updates
+    // Poll every 15 seconds for faster updates
     _pollingTimer?.cancel();
-    print('⏰ [RealtimeService] Setting up polling timer (30 second intervals)...');
+    print('⏰ [RealtimeService] Setting up polling timer (15 second intervals)...');
     
-    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!_shouldReconnect) {
         print('⚠️ [RealtimeService] Polling stopped: shouldReconnect = false');
         timer.cancel();
@@ -258,7 +267,7 @@ class RealtimeService {
       }
     });
     
-    print('✅ [RealtimeService] Background polling started successfully (30 second intervals)');
+    print('✅ [RealtimeService] Background polling started successfully (15 second intervals)');
     
     // Do an immediate check after starting
     print('🔄 [RealtimeService] Performing immediate check...');

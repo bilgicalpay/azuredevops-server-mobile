@@ -66,6 +66,9 @@ dependencies:
   flutter_html: ^3.0.0-beta.2
   flutter_markdown: ^0.6.23  # Markdown rendering için
   logging: ^1.3.0
+  
+  # Güvenlik
+  root_detector: ^0.0.2  # Root/jailbreak detection için alternatif paket
 
 dev_dependencies:
   flutter_test:

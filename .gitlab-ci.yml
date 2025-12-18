@@ -103,10 +103,20 @@ build:apk:
     - ./scripts/generate_sbom.sh || true
     - flutter build apk --release --dart-define=PRODUCTION=true
     - mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/azuredevops.apk || true
+    - echo "🔐 Signing APK with Sigstore (optional)..."
+    - |
+      if command -v cosign &> /dev/null; then
+        chmod +x scripts/sign_artifact.sh
+        ./scripts/sign_artifact.sh build/app/outputs/flutter-apk/azuredevops.apk || echo "⚠️  Sigstore signing skipped (authentication required)"
+      else
+        echo "⚠️  cosign not installed. Install from: https://docs.sigstore.dev/cosign/installation/"
+        echo "   Sigstore signing will be skipped. Artifact signing can be done manually."
+      fi
     - ls -lh build/app/outputs/flutter-apk/
   artifacts:
     paths:
       - build/app/outputs/flutter-apk/azuredevops.apk
+      - build/app/outputs/flutter-apk/azuredevops.apk.sigstore
       - build/sbom/
       - security/
     expire_in: 1 week

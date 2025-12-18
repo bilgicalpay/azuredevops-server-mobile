@@ -1,4 +1,4 @@
-// import 'package:flutter_root_jailbreak_checker/flutter_root_jailbreak_checker.dart';
+import 'package:root_detector/root_detector.dart';
 import 'package:logging/logging.dart';
 
 /// Security service for device security checks and logging
@@ -25,26 +25,26 @@ class SecurityService {
 
   /// Check if device is rooted (Android) or jailbroken (iOS)
   /// 
-  /// NOTE: Temporarily disabled due to package compilation issues.
-  /// TODO: Re-enable after fixing flutter_root_jailbreak_checker package or finding alternative.
+  /// Uses root_detector package for detection
   static Future<bool> isDeviceCompromised() async {
     try {
-      // TODO: Re-enable root/jailbreak detection after fixing package compilation issue
-      // The flutter_root_jailbreak_checker package has compilation errors with Google Play Integrity API
-      // 
-      // Previous implementation:
-      // final checker = FlutterRootJailbreakChecker();
-      // final result = await checker.checkOfflineIntegrity();
-      // return result.isRooted || result.isJailbroken;
+      final isRooted = await RootDetector.isRooted;
+      final isJailbroken = await RootDetector.isJailbroken;
+      final isCompromised = isRooted || isJailbroken;
+
+      if (isCompromised) {
+        _logSecurityEvent(
+          'Device is compromised (rooted: $isRooted, jailbroken: $isJailbroken)',
+          Level.SEVERE
+        );
+      } else {
+        _logSecurityEvent(
+          'Device security check passed (rooted: $isRooted, jailbroken: $isJailbroken)',
+          Level.INFO
+        );
+      }
       
-      _logSecurityEvent(
-        'Root/jailbreak detection temporarily disabled (package compilation issue)',
-        Level.WARNING
-      );
-      
-      // Return false (device not compromised) for now
-      // This allows the app to continue functioning while we fix the package issue
-      return false;
+      return isCompromised;
     } catch (e) {
       _logSecurityEvent('Error checking device security: $e', Level.SEVERE);
       return false;

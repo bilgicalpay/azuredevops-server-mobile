@@ -16,6 +16,7 @@ import '../services/realtime_service.dart';
 import '../services/background_task_service.dart';
 import '../services/background_worker_service.dart';
 import '../services/wiki_service.dart';
+import '../services/auto_logout_service.dart';
 import 'work_item_detail_screen.dart';
 import 'queries_screen.dart';
 import 'settings_screen.dart';
@@ -51,6 +52,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _startRealtimeService();
     // Ensure background task service is running and initialized
     _initializeBackgroundService();
+    // Update activity timestamp on app start
+    _updateActivity();
+  }
+  
+  void _updateActivity() {
+    final storage = Provider.of<StorageService>(context, listen: false);
+    AutoLogoutService.updateActivity(storage);
   }
 
   Future<void> _loadAppVersion() async {
@@ -85,6 +93,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       // App came to foreground - refresh data and restart services
       print('🔄 [HomeScreen] App resumed, refreshing and restarting services...');
+      // Update activity timestamp
+      _updateActivity();
       _loadWorkItems();
       // Restart realtime service to ensure it's running
       _startRealtimeService();

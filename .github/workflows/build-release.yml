@@ -262,11 +262,26 @@ jobs:
             mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/azuredevops.apk
           fi
 
+      - name: Sign APK with Sigstore (optional)
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        run: |
+          echo "🔐 Signing APK with Sigstore..."
+          if command -v cosign &> /dev/null; then
+            chmod +x scripts/sign_artifact.sh
+            ./scripts/sign_artifact.sh build/app/outputs/flutter-apk/azuredevops.apk || echo "⚠️  Sigstore signing skipped (cosign not available or authentication required)"
+          else
+            echo "⚠️  cosign not installed. Install from: https://docs.sigstore.dev/cosign/installation/"
+            echo "   Sigstore signing will be skipped. Artifact signing can be done manually."
+          fi
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: build/app/outputs/flutter-apk/azuredevops.apk
+          path: |
+            build/app/outputs/flutter-apk/azuredevops.apk
+            build/app/outputs/flutter-apk/azuredevops.apk.sigstore
           retention-days: 7
 
       - name: Upload AAB artifact
@@ -383,6 +398,9 @@ jobs:
           if [ -f "release-assets/android/azuredevops.apk" ]; then
             mv release-assets/android/azuredevops.apk "release-assets/android/azuredevops-$VERSION.apk"
           fi
+          if [ -f "release-assets/android/azuredevops.apk.sigstore" ]; then
+            mv release-assets/android/azuredevops.apk.sigstore "release-assets/android/azuredevops-$VERSION.apk.sigstore"
+          fi
           if [ -f "release-assets/android/app-release.aab" ]; then
             mv release-assets/android/app-release.aab "release-assets/android/azuredevops-$VERSION.aab"
           fi
@@ -458,6 +476,7 @@ jobs:
           body_path: release-notes.md
           files: |
             release-assets/android/azuredevops-${{ steps.version.outputs.version_number }}.apk
+            release-assets/android/azuredevops-${{ steps.version.outputs.version_number }}.apk.sigstore
             release-assets/android/azuredevops-${{ steps.version.outputs.version_number }}.aab
             release-assets/ios/azuredevops-${{ steps.version.outputs.version_number }}.ipa
             release-assets/RELEASE_NOTES.md

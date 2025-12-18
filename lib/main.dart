@@ -23,6 +23,7 @@ import 'services/background_task_service.dart';
 import 'services/background_worker_service.dart';
 import 'services/security_service.dart';
 import 'services/token_refresh_service.dart';
+import 'services/auto_logout_service.dart';
 import 'package:logging/logging.dart';
 
 /// Uygulama giriş noktası
@@ -70,6 +71,11 @@ void main() async {
   
   // Ensure token is valid
   await TokenRefreshService.ensureValidToken(storage);
+  
+  // Check for auto-logout (30 days of inactivity)
+  final authService = AuthService();
+  authService.setStorage(storage);
+  await AutoLogoutService.checkAndPerformAutoLogout(storage, authService);
   
   runApp(MyApp(storage: storage));
 }

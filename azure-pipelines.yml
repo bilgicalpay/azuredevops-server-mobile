@@ -1,0 +1,200 @@
+# Azure DevOps Pipeline for Azure DevOps OnPrem Mobile App
+# Flutter Android and iOS build with security features
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  tags:
+    include:
+      - 'v*'
+
+pr: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  FLUTTER_VERSION: '3.27.0'
+  JAVA_VERSION: '17'
+
+stages:
+- stage: Test
+  displayName: 'Test and Security Scan'
+  jobs:
+  - job: UpdateDependencies
+    displayName: 'Update Dependencies'
+    steps:
+    - task: UseFlutter@0
+      inputs:
+        channel: 'stable'
+        version: '$(FLUTTER_VERSION)'
+    
+    - script: |
+        chmod +x scripts/update_dependencies.sh
+        ./scripts/update_dependencies.sh
+      displayName: 'Check Dependencies'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(System.DefaultWorkingDirectory)'
+        artifactName: 'dependency-reports'
+        publishLocation: 'Container'
+      condition: always()
+
+  - job: LintAndTest
+    displayName: 'Lint and Unit Tests'
+    dependsOn: UpdateDependencies
+    steps:
+    - task: UseFlutter@0
+      inputs:
+        channel: 'stable'
+        version: '$(FLUTTER_VERSION)'
+    
+    - script: flutter pub get
+      displayName: 'Install Dependencies'
+    
+    - script: flutter analyze
+      displayName: 'Flutter Analyze'
+    
+    - script: flutter test
+      displayName: 'Flutter Test'
+    
+    - script: |
+        echo "🔒 Running security scan..."
+        chmod +x scripts/security_scan.sh
+        ./scripts/security_scan.sh || true
+        chmod +x scripts/security_checks.sh
+        ./scripts/security_checks.sh || true
+      displayName: 'Security Scan'
+      continueOnError: true
+
+- stage: Build
+  displayName: 'Build Artifacts'
+  dependsOn: Test
+  condition: succeeded()
+  jobs:
+  - job: BuildAndroid
+    displayName: 'Build Android APK'
+    steps:
+    - task: UseFlutter@0
+      inputs:
+        channel: 'stable'
+        version: '$(FLUTTER_VERSION)'
+    
+    - task: JavaToolInstaller@0
+      inputs:
+        versionSpec: '$(JAVA_VERSION)'
+        jdkArchitecture: 'x64'
+        jdkSource: 'PreInstalled'
+    
+    - script: flutter pub get
+      displayName: 'Install Dependencies'
+    
+    - script: |
+        echo "📋 Generating SBOM..."
+        chmod +x scripts/generate_sbom.sh
+        ./scripts/generate_sbom.sh || true
+      displayName: 'Generate SBOM'
+      continueOnError: true
+    
+    - script: flutter build apk --release --dart-define=PRODUCTION=true
+      displayName: 'Build APK'
+    
+    - script: |
+        if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/azuredevops.apk
+        fi
+      displayName: 'Rename APK'
+    
+    - script: |
+        echo "🔐 Signing APK with Sigstore (optional)..."
+        if command -v cosign &> /dev/null; then
+          chmod +x scripts/sign_artifact.sh
+          ./scripts/sign_artifact.sh build/app/outputs/flutter-apk/azuredevops.apk || echo "⚠️  Sigstore signing skipped (authentication required)"
+        else
+          echo "⚠️  cosign not installed. Install from: https://docs.sigstore.dev/cosign/installation/"
+          echo "   Sigstore signing will be skipped. Artifact signing can be done manually."
+        fi
+      displayName: 'Sign APK with Sigstore'
+      continueOnError: true
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'build/app/outputs/flutter-apk/azuredevops.apk'
+        artifactName: 'android-apk'
+        publishLocation: 'Container'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'build/app/outputs/flutter-apk/azuredevops.apk.sigstore'
+        artifactName: 'android-apk-sigstore'
+        publishLocation: 'Container'
+      condition: and(succeededOrFailed(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      continueOnError: true
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'build/sbom'
+        artifactName: 'sbom'
+        publishLocation: 'Container'
+      condition: always()
+      continueOnError: true
+
+  - job: BuildAndroidAAB
+    displayName: 'Build Android AAB'
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    steps:
+    - task: UseFlutter@0
+      inputs:
+        channel: 'stable'
+        version: '$(FLUTTER_VERSION)'
+    
+    - task: JavaToolInstaller@0
+      inputs:
+        versionSpec: '$(JAVA_VERSION)'
+        jdkArchitecture: 'x64'
+        jdkSource: 'PreInstalled'
+    
+    - script: flutter pub get
+      displayName: 'Install Dependencies'
+    
+    - script: flutter build appbundle --release --dart-define=PRODUCTION=true
+      displayName: 'Build AAB'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'build/app/outputs/bundle/release/app-release.aab'
+        artifactName: 'android-aab'
+        publishLocation: 'Container'
+
+  - job: BuildiOS
+    displayName: 'Build iOS IPA'
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    pool:
+      vmImage: 'macos-latest'
+    steps:
+    - task: UseFlutter@0
+      inputs:
+        channel: 'stable'
+        version: '$(FLUTTER_VERSION)'
+    
+    - script: flutter pub get
+      displayName: 'Install Dependencies'
+    
+    - script: |
+        cd ios
+        pod install
+      displayName: 'Install CocoaPods'
+    
+    - script: flutter build ipa --release --dart-define=PRODUCTION=true
+      displayName: 'Build IPA'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'build/ios/ipa/azuredevops_onprem.ipa'
+        artifactName: 'ios-ipa'
+        publishLocation: 'Container'
+      continueOnError: true
+

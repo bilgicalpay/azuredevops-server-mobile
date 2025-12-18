@@ -130,6 +130,36 @@ class StorageService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Last Activity Timestamp (for auto-logout)
+  /// Get last activity timestamp (when app was last used)
+  Future<int?> getLastActivityTimestamp() async {
+    return _prefs?.getInt('last_activity_timestamp');
+  }
+
+  /// Set last activity timestamp (current time)
+  Future<void> updateLastActivityTimestamp() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await _prefs?.setInt('last_activity_timestamp', now);
+    notifyListeners();
+  }
+
+  /// Check if auto-logout should be triggered (30 days of inactivity)
+  /// Returns true if last activity was more than 30 days ago
+  Future<bool> shouldAutoLogout() async {
+    final lastActivity = await getLastActivityTimestamp();
+    if (lastActivity == null) {
+      // No activity recorded, don't logout (first time user)
+      return false;
+    }
+    
+    final lastActivityDate = DateTime.fromMillisecondsSinceEpoch(lastActivity);
+    final now = DateTime.now();
+    final daysSinceLastActivity = now.difference(lastActivityDate).inDays;
+    
+    // Auto-logout after 30 days of inactivity
+    return daysSinceLastActivity >= 30;
+  }
+
   Future<void> clear() async {
     // Güvenli depolamadan token'ı sil
     await _secureStorage.delete(key: 'auth_token');

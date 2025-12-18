@@ -22,9 +22,10 @@ void main() {
 
     // Verify that the app loads (check for login screen or home screen)
     // The app should show either login screen or home screen depending on auth state
-    await tester.pumpAndSettle();
+    // Use pumpAndSettle with timeout to avoid infinite waiting
+    await tester.pumpAndSettle(const Duration(seconds: 5));
     
     // App should have loaded successfully
     expect(find.byType(MaterialApp), findsOneWidget);
-  });
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

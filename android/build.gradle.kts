@@ -13,14 +13,35 @@ subprojects {
             try {
                 val android = project.extensions.findByName("android")
                 if (android != null) {
-                    val androidExtension = android as com.android.build.gradle.BaseExtension
-                    if (androidExtension.namespace == null || androidExtension.namespace.isEmpty()) {
-                        androidExtension.namespace = "space.wisnuwiry.root_detector"
-                        println("✅ Added namespace 'space.wisnuwiry.root_detector' to root_detector")
+                    val androidExtension = android as? com.android.build.gradle.BaseExtension
+                    if (androidExtension != null) {
+                        try {
+                            // Try to get namespace property
+                            val namespaceProperty = androidExtension::class.java.getDeclaredMethod("getNamespace")
+                            val currentNamespace = namespaceProperty.invoke(androidExtension) as? String
+                            if (currentNamespace.isNullOrEmpty()) {
+                                val setNamespaceMethod = androidExtension::class.java.getDeclaredMethod("setNamespace", String::class.java)
+                                setNamespaceMethod.invoke(androidExtension, "space.wisnuwiry.root_detector")
+                                println("✅ Added namespace 'space.wisnuwiry.root_detector' to root_detector")
+                            }
+                        } catch (e: Exception) {
+                            // Fallback: try direct property access
+                            try {
+                                val namespaceField = androidExtension::class.java.getDeclaredField("namespace")
+                                namespaceField.isAccessible = true
+                                val currentNamespace = namespaceField.get(androidExtension) as? String
+                                if (currentNamespace.isNullOrEmpty()) {
+                                    namespaceField.set(androidExtension, "space.wisnuwiry.root_detector")
+                                    println("✅ Added namespace to root_detector (field access)")
+                                }
+                            } catch (e2: Exception) {
+                                println("⚠️  Could not set namespace for root_detector: ${e2.message}")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
-                println("⚠️  Could not set namespace for root_detector: ${e.message}")
+                println("⚠️  Could not access android extension for root_detector: ${e.message}")
             }
         }
     }

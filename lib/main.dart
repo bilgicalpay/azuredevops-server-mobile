@@ -21,6 +21,8 @@ import 'services/storage_service.dart';
 import 'services/notification_service.dart';
 import 'services/background_task_service.dart';
 import 'services/background_worker_service.dart';
+import 'services/security_service.dart';
+import 'services/token_refresh_service.dart';
 
 /// Uygulama giriş noktası
 /// Servisleri başlatır ve ana widget'ı çalıştırır
@@ -37,6 +39,19 @@ void main() async {
   // Debug mode'da overflow göstergelerini kapat
   debugDisableShadows = true;
   
+  // Initialize security service first
+  await SecurityService.initialize();
+  
+  // Check device security
+  final isCompromised = await SecurityService.isDeviceCompromised();
+  if (isCompromised) {
+    SecurityService.logSecurityEvent(
+      'WARNING: Device is compromised (rooted/jailbroken)',
+      Level.SEVERE
+    );
+    // In production, you might want to block app usage or show warning
+  }
+  
   // Servisleri başlat
   final storage = StorageService();
   await storage.init();
@@ -51,6 +66,9 @@ void main() async {
   await backgroundService.init();
   await backgroundService.initializeTracking(); // Bildirim göndermeden takibi başlat
   backgroundService.start();
+  
+  // Ensure token is valid
+  await TokenRefreshService.ensureValidToken();
   
   runApp(MyApp(storage: storage));
 }

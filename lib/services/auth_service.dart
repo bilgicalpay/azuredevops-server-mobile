@@ -9,6 +9,8 @@ import 'dart:convert' show base64, utf8;
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'storage_service.dart';
+import 'certificate_pinning_service.dart';
+import 'security_service.dart';
 
 /// Kimlik doğrulama servisi sınıfı
 /// PAT ve AD kimlik doğrulama yöntemlerini destekler
@@ -54,8 +56,11 @@ class AuthService extends ChangeNotifier {
     String? collection,
   }) async {
     try {
+      // Log authentication attempt
+      SecurityService.logAuthentication('Token login attempt', {'serverUrl': serverUrl});
+      
       // Bağlantıyı test et
-      final dio = Dio();
+      final dio = CertificatePinningService.createSecureDio();
       final cleanUrl = serverUrl.endsWith('/') 
           ? serverUrl.substring(0, serverUrl.length - 1) 
           : serverUrl;
@@ -64,6 +69,8 @@ class AuthService extends ChangeNotifier {
           ? '$cleanUrl/$collection/_apis/projects?api-version=7.0'
           : '$cleanUrl/_apis/projects?api-version=7.0';
 
+      SecurityService.logApiCall(testUrl, method: 'GET');
+      
       final response = await dio.get(
         testUrl,
         options: Options(
@@ -73,6 +80,8 @@ class AuthService extends ChangeNotifier {
           },
         ),
       );
+
+      SecurityService.logApiCall(testUrl, method: 'GET', statusCode: response.statusCode);
 
       if (response.statusCode == 200) {
         await _storage?.setServerUrl(cleanUrl);
@@ -86,12 +95,19 @@ class AuthService extends ChangeNotifier {
         _serverUrl = cleanUrl;
         _token = token;
         _authType = 'token';
+        
+        SecurityService.logAuthentication('Token login successful', {'serverUrl': cleanUrl});
+        SecurityService.logTokenOperation('Token stored', success: true);
+        
         notifyListeners();
         return true;
       }
+      
+      SecurityService.logAuthentication('Token login failed', {'statusCode': response.statusCode});
       return false;
     } catch (e) {
       debugPrint('Token login error: $e');
+      SecurityService.logAuthentication('Token login error', {'error': e.toString()});
       return false;
     }
   }
@@ -106,7 +122,10 @@ class AuthService extends ChangeNotifier {
     String? collection,
   }) async {
     try {
-      final dio = Dio();
+      // Log authentication attempt
+      SecurityService.logAuthentication('AD login attempt', {'serverUrl': serverUrl, 'username': username});
+      
+      final dio = CertificatePinningService.createSecureDio();
       final cleanUrl = serverUrl.endsWith('/') 
           ? serverUrl.substring(0, serverUrl.length - 1) 
           : serverUrl;
@@ -116,6 +135,8 @@ class AuthService extends ChangeNotifier {
           ? '$cleanUrl/$collection/_apis/projects?api-version=7.0'
           : '$cleanUrl/_apis/projects?api-version=7.0';
 
+      SecurityService.logApiCall(testUrl, method: 'GET');
+      
       final response = await dio.get(
         testUrl,
         options: Options(
@@ -125,6 +146,8 @@ class AuthService extends ChangeNotifier {
           },
         ),
       );
+
+      SecurityService.logApiCall(testUrl, method: 'GET', statusCode: response.statusCode);
 
       if (response.statusCode == 200) {
         // Generate a token-like identifier for AD auth
@@ -143,12 +166,19 @@ class AuthService extends ChangeNotifier {
         _token = adToken;
         _username = username;
         _authType = 'ad';
+        
+        SecurityService.logAuthentication('AD login successful', {'serverUrl': cleanUrl, 'username': username});
+        SecurityService.logTokenOperation('AD token stored', success: true);
+        
         notifyListeners();
         return true;
       }
+      
+      SecurityService.logAuthentication('AD login failed', {'statusCode': response.statusCode});
       return false;
     } catch (e) {
       debugPrint('AD login error: $e');
+      SecurityService.logAuthentication('AD login error', {'error': e.toString()});
       return false;
     }
   }

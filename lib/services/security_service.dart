@@ -1,6 +1,5 @@
 import 'dart:io';
-import 'package:root_detector/root_detector.dart';
-import 'package:jailbreak_detector/jailbreak_detector.dart';
+import 'package:flutter_root_jailbreak_checker/flutter_root_jailbreak_checker.dart';
 import 'package:logging/logging.dart';
 
 /// Security service for device security checks and logging
@@ -28,20 +27,14 @@ class SecurityService {
   /// Check if device is rooted (Android) or jailbroken (iOS)
   static Future<bool> isDeviceCompromised() async {
     try {
-      if (Platform.isAndroid) {
-        final isRooted = await RootDetector.isRooted();
-        if (isRooted) {
-          _logSecurityEvent('Device is rooted', Level.SEVERE);
-        }
-        return isRooted;
-      } else if (Platform.isIOS) {
-        final isJailbroken = await JailbreakDetector.isJailbroken();
-        if (isJailbroken) {
-          _logSecurityEvent('Device is jailbroken', Level.SEVERE);
-        }
-        return isJailbroken;
+      final checker = FlutterRootJailbreakChecker();
+      final isCompromised = await checker.isRootedOrJailbroken();
+      
+      if (isCompromised) {
+        _logSecurityEvent('Device is compromised (rooted/jailbroken)', Level.SEVERE);
       }
-      return false;
+      
+      return isCompromised;
     } catch (e) {
       _logSecurityEvent('Error checking device security: $e', Level.SEVERE);
       return false;

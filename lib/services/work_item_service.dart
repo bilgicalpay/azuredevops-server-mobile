@@ -9,11 +9,14 @@
 import 'dart:convert' show base64, utf8;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'certificate_pinning_service.dart';
+import 'security_service.dart';
+import 'token_refresh_service.dart';
 
 /// Work Item servisi sınıfı
 /// Azure DevOps API ile work item işlemlerini yönetir
 class WorkItemService {
-  final Dio _dio = Dio();
+  final Dio _dio = CertificatePinningService.createSecureDio();
   
   // Expose for UI layer
   Dio get dio => _dio;

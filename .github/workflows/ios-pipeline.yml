@@ -310,6 +310,9 @@ jobs:
         (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) ||
         (github.event_name == 'workflow_dispatch')
       )
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

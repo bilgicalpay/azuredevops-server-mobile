@@ -22,6 +22,7 @@ import 'queries_screen.dart';
 import 'settings_screen.dart';
 import 'wiki_viewer_screen.dart';
 import 'documents_screen.dart';
+import 'market_screen.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 /// Ana ekran widget'ı
@@ -309,6 +310,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               );
             },
             tooltip: 'Belgeler',
+          ),
+          IconButton(
+            icon: const Icon(Icons.store),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MarketScreen(),
+                ),
+              );
+            },
+            tooltip: 'Market',
           ),
           IconButton(
             icon: const Icon(Icons.settings),

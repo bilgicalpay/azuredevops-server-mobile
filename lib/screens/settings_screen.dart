@@ -22,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _wikiUrlController = TextEditingController();
   final _pollingIntervalController = TextEditingController();
+  final _marketRepoUrlController = TextEditingController();
   bool _isLoading = false;
   int _pollingInterval = 15;
 
@@ -35,6 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _wikiUrlController.dispose();
     _pollingIntervalController.dispose();
+    _marketRepoUrlController.dispose();
     super.dispose();
   }
 
@@ -42,6 +44,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final storage = Provider.of<StorageService>(context, listen: false);
     final wikiUrl = storage.getWikiUrl();
     _wikiUrlController.text = wikiUrl ?? '';
+    
+    final marketRepoUrl = storage.getMarketRepoUrl();
+    _marketRepoUrlController.text = marketRepoUrl ?? '';
     
     // Load polling interval
     final interval = await storage.getPollingInterval();
@@ -92,6 +97,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     
     await storage.setWikiUrl(wikiUrl.isEmpty ? null : wikiUrl);
+    
+    // Save market repository URL
+    final marketRepoUrl = _marketRepoUrlController.text.trim();
+    if (marketRepoUrl.isNotEmpty) {
+      // Validate URL
+      final uri = Uri.tryParse(marketRepoUrl);
+      if (uri == null || !uri.hasScheme) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Geçerli bir Market Repository URL girin'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+    }
+    await storage.setMarketRepoUrl(marketRepoUrl.isEmpty ? null : marketRepoUrl);
     
     setState(() => _isLoading = false);
     
@@ -157,6 +181,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Kaydet'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Market Ayarları',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Azure DevOps Git repository URL\'sini girin. Bu repository\'den release\'ler ve artifact\'lar (APK/IPA) çekilecektir.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _marketRepoUrlController,
+                      decoration: const InputDecoration(
+                        labelText: 'Market Repository URL',
+                        hintText: 'https://devops.higgscloud.com/Dev/demo/_git/azuredevops-server-mobile',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.store),
+                      ),
+                      keyboardType: TextInputType.url,
                     ),
                   ],
                 ),

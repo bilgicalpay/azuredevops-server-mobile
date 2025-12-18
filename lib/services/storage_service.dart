@@ -110,6 +110,17 @@ class StorageService extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  // Market Repository URL (Azure DevOps Git repository)
+  String? getMarketRepoUrl() => _prefs?.getString('market_repo_url');
+  Future<void> setMarketRepoUrl(String? repoUrl) async {
+    if (repoUrl == null || repoUrl.isEmpty) {
+      await _prefs?.remove('market_repo_url');
+    } else {
+      await _prefs?.setString('market_repo_url', repoUrl);
+    }
+    notifyListeners();
+  }
   
   // Polling Interval (in seconds)
   /// Get polling interval from storage (default: 15 seconds)

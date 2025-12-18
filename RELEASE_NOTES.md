@@ -1,31 +1,31 @@
-# Release Notes - v1.0.20 (Build 21)
+# Release Notes - v1.0.20 (Build 22)
 
-**Release Date:** 2025-12-18  
+**Release Date:** 2025-12-18 13:23:24 UTC  
 **Package Name:** io.rdc.azuredevops  
 **Developer:** Alpay Bilgiç (bilgicalpay@gmail.com)
 
 ## 📦 Build Files
 
-- **Android APK:** azuredevops.apk (54MB)
-- **iOS IPA:** azuredevops.ipa (7.7MB)
+- **Android APK:** azuredevops-1.0.20.apk
+- **iOS IPA:** azuredevops-1.0.20.ipa
 
 ## 🚀 Deployment Status
 
-- ✅ **Android:** Deployed to device via ADB
-- ✅ **iOS:** Deployed to simulator
+- ✅ **Android:** Ready for deployment
+- ✅ **iOS:** Ready for deployment
 
 ## 🔒 Security Enhancements
 
 ### Security Audit & Compliance
 - ✅ **SBOM Generated:** Software Bill of Materials created in SPDX and text formats
-  - `build/sbom/spdx.json` (SPDX format)
-  - `build/sbom/sbom.txt` (Text format)
+  - build/sbom/spdx.json (SPDX format)
+  - build/sbom/sbom.txt (Text format)
 - ✅ **Security Audit Report:** Comprehensive security analysis completed
-  - `security/security_audit.md`
-  - `security/security_report.md`
+  - security/security_audit.md
 - ✅ **OWASP Top 10 Analysis:** Security vulnerabilities assessed
 - ✅ **Dependency Vulnerability Scan:** Outdated packages identified
-- ✅ **Cosign Installed:** Ready for artifact signing
+- ✅ **Dependency Update Report:** Latest dependency status tracked
+- ✅ **Comprehensive Security Audit:** Combined security analysis
 
 ### Security Features
 - ✅ Secure token storage using FlutterSecureStorage
@@ -34,25 +34,6 @@
 - ✅ HTTPS enforced for all API calls
 - ✅ Background service security improvements
 - ✅ Android 15 compatibility
-
-## 📋 Package Name Change
-
-**Previous:** io.purplesoft.azuredevops_onprem  
-**Current:** io.rdc.azuredevops
-
-### Updated Files
-- Android: build.gradle.kts, MainActivity.kt, AndroidManifest.xml
-- iOS: project.pbxproj, Appfile
-- Scripts: build_and_deploy.sh
-- Documentation: All documentation files updated
-
-## 🐛 Bug Fixes
-
-- Fixed duplicate MainActivity.kt compilation error
-- Fixed background service notifications when app is swiped away
-- Fixed FlutterSecureStorage access in background service
-- Fixed NotificationService context issues in background service
-- Improved persistent storage for tracking data
 
 ## ✨ Features
 
@@ -65,27 +46,19 @@
 - Query execution and results display
 - Work item detail view
 
-## 📚 Documentation Updates
-
-- Updated all dates from 2024 to 2025
-- Updated developer email to bilgicalpay@gmail.com
-- Added security documentation
-- Added SBOM generation scripts
-- Added security scanning scripts
-
 ## 🔧 Technical Details
 
 ### Dependencies
-- Flutter SDK: 3.40.0-1.0.pre-212
-- Dart SDK: 3.11.0 (build 3.11.0-245.0.dev)
+- Flutter SDK: 3.27.0
+- Dart SDK: 3.5.0+
 - Minimum Android: SDK 21 (Android 5.0)
 - Target Android: SDK 34 (Android 14)
 - Minimum iOS: 13.0
 - Target iOS: 17.0
 
 ### Build Information
-- Build Date: 2025-12-18
-- Build Number: 21
+- Build Date: Thu Dec 18 16:23:24 +03 2025
+- Build Number: 22
 - Version: 1.0.20
 
 ## 📝 Security Recommendations
@@ -99,13 +72,15 @@
 
 ## 📦 Files Included in Release
 
-- azuredevops.apk (Android APK)
-- azuredevops.ipa (iOS IPA)
+- azuredevops-1.0.20.apk (Android APK)
+- azuredevops-1.0.20.ipa (iOS IPA)
 - RELEASE_NOTES.md (This file)
-- build/sbom/spdx.json (SBOM - SPDX format)
-- build/sbom/sbom.txt (SBOM - Text format)
-- security/security_report.md (Security Report)
-- security/security_audit.md (Security Audit)
+- spdx.json (SBOM - SPDX format)
+- sbom.txt (SBOM - Text format)
+- security_report.md (Security Report)
+- security_audit.md (Security Audit)
+- dependency_update_report.md (Dependency Update Report)
+- comprehensive_audit.md (Comprehensive Security Audit)
 
 ## 🔗 Links
 
@@ -121,4 +96,4 @@
 
 ---
 
-**Note:** This release includes comprehensive security audits, SBOM generation, and all necessary documentation for compliance and security review.
+**Note:** This release includes comprehensive security audits, SBOM generation, dependency updates, and all necessary documentation for compliance and security review.

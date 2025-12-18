@@ -244,6 +244,14 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       final storage = Provider.of<StorageService>(context, listen: false);
+      final token = await authService.getAuthToken();
+      if (token == null) {
+        setState(() {
+          _isLoadingRelated = false;
+          _relatedWorkItemsError = 'Authentication token not available';
+        });
+        return;
+      }
 
       final relatedItemsGrouped = await _workItemService.getRelatedWorkItemsFromResponse(
         serverUrl: authService.serverUrl!,

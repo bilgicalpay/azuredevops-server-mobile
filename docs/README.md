@@ -2,7 +2,7 @@
 
 **Geliştirici:** Alpay Bilgiç  
 **Versiyon:** 1.0.0  
-**Tarih:** 2024
+**Tarih:** 2025
 
 ## Genel Bakış
 
@@ -111,7 +111,7 @@ Detaylar için [MDM_INTEGRATION.md](MDM_INTEGRATION.md) dosyasına bakın.
 
 **Teknik Destek:**
 - Geliştirici: Alpay Bilgiç
-- E-posta: [Geliştirici E-postası]
+- E-posta: bilgicalpay@gmail.com
 
 **Güvenlik Sorunları:**
 - E-posta: [Güvenlik Ekibi E-postası]
@@ -125,6 +125,6 @@ Bu uygulama kurumsal kullanım için geliştirilmiştir.
 
 ---
 
-**Son Güncelleme:** 2024  
+**Son Güncelleme:** 2025  
 **Dokümantasyon Versiyonu:** 1.0
 

@@ -353,6 +353,6 @@ USB debugging açık olmalı ve cihaz yetkilendirilmiş olmalı.
 
 ---
 
-**Son Güncelleme:** 2024-12-18  
+**Son Güncelleme:** 2025-12-18  
 **Versiyon:** 1.0.2+3
 

@@ -23,6 +23,7 @@ cd ..
 pod update
 ```
 
+
 ## PATH Ayarları
 
 PATH otomatik olarak ayarlandı. Yeni terminal açtığınızda da çalışacak.

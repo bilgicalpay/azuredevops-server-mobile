@@ -1,0 +1,27 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "documentNamespace": "https://github.com/bilgicalpay/azuredevops-onprem-clean/spdx/v1.0.20",
+  "name": "azuredevops_onprem-1.0.20",
+  "creationInfo": {
+    "creators": [
+      "Tool: Manual",
+      "Person: Alpay Bilgiç (bilgicalpay@gmail.com)"
+    ],
+    "created": "2025-12-18T13:22:58Z"
+  },
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-azuredevops_onprem",
+      "name": "azuredevops_onprem",
+      "versionInfo": "1.0.20+21",
+      "packageFileName": "azuredevops.apk",
+      "downloadLocation": "https://github.com/bilgicalpay/azuredevops-onprem-clean/releases/tag/v1.0.20",
+      "filesAnalyzed": false,
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "NONE"
+      }
+    }
+  ]
+}

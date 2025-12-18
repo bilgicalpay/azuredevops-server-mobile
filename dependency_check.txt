@@ -1,0 +1,1 @@
+./scripts/update_dependencies.sh: line 14: /opt/homebrew/bin/flutter: No such file or directory

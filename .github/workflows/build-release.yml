@@ -466,6 +466,7 @@ jobs:
             release-assets/security_report.md
             release-assets/security_audit.md
             release-assets/security/comprehensive_audit.md
+            release-assets/security/security_implementation_report.md
             release-assets/dependencies/dependency_update_report.md
           draft: false
           prerelease: false

@@ -36,9 +36,39 @@ on:
         default: patch
 
 jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Check for outdated dependencies
+        run: |
+          chmod +x scripts/update_dependencies.sh
+          ./scripts/update_dependencies.sh
+
+      - name: Upload dependency report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-update-report
+          path: |
+            dependency_update_report.md
+            dependency_check.txt
+            security_audit_dependencies.txt
+          retention-days: 7
+
   test:
     name: Test
     runs-on: ${{ matrix.os }}
+    needs: update-dependencies
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -76,11 +106,6 @@ jobs:
           echo "🔒 Running security scan..."
           chmod +x scripts/security_scan.sh
           ./scripts/security_scan.sh || true
-          
-      - name: Check for outdated dependencies
-        run: |
-          echo "📦 Checking for outdated packages..."
-          flutter pub outdated || true
 
   bump-version:
     name: Bump Version and Create Tag

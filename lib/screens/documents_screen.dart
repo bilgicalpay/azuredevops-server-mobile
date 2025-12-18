@@ -52,6 +52,15 @@ class DocumentsScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _buildDocumentCard(
             context,
+            title: 'Market Kullanım Kılavuzu',
+            description: 'Market özelliği ile APK ve IPA dosyalarını indirme kılavuzu',
+            icon: Icons.store,
+            color: Colors.purple,
+            content: _marketContent,
+          ),
+          const SizedBox(height: 16),
+          _buildDocumentCard(
+            context,
             title: 'Genel Bakış',
             description: 'Uygulama hakkında genel bilgiler, özellikler ve hızlı başlangıç kılavuzu',
             icon: Icons.info,

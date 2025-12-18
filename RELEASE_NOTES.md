@@ -86,6 +86,14 @@
 
 ## ✨ New Features
 
+### Market Özelliği
+- ✅ **Market Screen:** Azure DevOps Git repository'den release'leri ve artifact'ları indirme
+- ✅ **APK/IPA İndirme:** Android APK ve iOS IPA dosyalarını indirme
+- ✅ **Release Listesi:** En yeni release'ler önce gösterilir
+- ✅ **Pull-to-Refresh:** Market sayfasını yenileme
+- ✅ **Settings Integration:** Market Repository URL ayarı
+- ✅ **Both Platforms:** Hem iOS hem Android desteği
+
 ### Auto-Logout
 - ✅ **30-Day Inactivity:** Automatic logout after 30 days of no activity
 - ✅ **Activity Tracking:** Last activity timestamp stored and checked

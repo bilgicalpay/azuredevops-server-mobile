@@ -9,9 +9,7 @@ iOS build yapmak için aşağıdaki kurulumlar gereklidir:
 - ✅ Podfile oluşturuldu
 - ✅ CocoaPods bağımlılıkları yüklendi
 
-### ❌ Eksik
-- ❌ Xcode (App Store'dan yüklenmeli)
-- ❌ Xcode Command Line Tools
+
 
 ## Kurulum Adımları
 

@@ -28,10 +28,27 @@ class SecurityService {
   static Future<bool> isDeviceCompromised() async {
     try {
       final checker = FlutterRootJailbreakChecker();
-      final isCompromised = await checker.isRootedOrJailbroken();
+      bool isRooted = false;
+      bool isJailbroken = false;
+      
+      try {
+        isRooted = await checker.isRooted();
+      } catch (e) {
+        // If platform doesn't support root check, assume not rooted
+        isRooted = false;
+      }
+      
+      try {
+        isJailbroken = await checker.isJailbroken();
+      } catch (e) {
+        // If platform doesn't support jailbreak check, assume not jailbroken
+        isJailbroken = false;
+      }
+      
+      final isCompromised = isRooted || isJailbroken;
       
       if (isCompromised) {
-        _logSecurityEvent('Device is compromised (rooted/jailbroken)', Level.SEVERE);
+        _logSecurityEvent('Device is compromised (rooted: $isRooted, jailbroken: $isJailbroken)', Level.SEVERE);
       }
       
       return isCompromised;
@@ -75,4 +92,3 @@ class SecurityService {
         authorized ? Level.INFO : Level.SEVERE);
   }
 }
-

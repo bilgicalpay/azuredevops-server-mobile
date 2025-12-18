@@ -1,6 +1,5 @@
 import 'package:logging/logging.dart';
 import 'storage_service.dart';
-import 'api_service.dart';
 import 'security_service.dart';
 
 /// Service for automatic token refresh
@@ -9,15 +8,16 @@ class TokenRefreshService {
   static const int _tokenExpiryBufferSeconds = 300; // 5 minutes before expiry
 
   /// Check if token needs refresh and refresh if necessary
-  static Future<bool> ensureValidToken() async {
+  /// Requires StorageService instance
+  static Future<bool> ensureValidToken(StorageService storage) async {
     try {
-      final token = await StorageService.getToken();
+      final token = await storage.getToken();
       if (token == null || token.isEmpty) {
         SecurityService.logTokenOperation('No token found', success: false);
         return false;
       }
 
-      final tokenExpiry = await StorageService.getTokenExpiry();
+      final tokenExpiry = await storage.getTokenExpiry();
       if (tokenExpiry == null) {
         // No expiry info - assume token is valid
         return true;
@@ -30,7 +30,7 @@ class TokenRefreshService {
       // Check if token is expired or will expire soon
       if (timeUntilExpiry.inSeconds < _tokenExpiryBufferSeconds) {
         SecurityService.logTokenOperation('Token expiring soon, refreshing...');
-        return await _refreshToken();
+        return await _refreshToken(storage);
       }
 
       SecurityService.logTokenOperation('Token is valid');
@@ -87,4 +87,3 @@ class TokenRefreshService {
     SecurityService.logTokenOperation('Token cleared');
   }
 }
-

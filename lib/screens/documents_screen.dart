@@ -509,6 +509,175 @@ const String _mdmContent = '''# MDM Entegrasyon Kılavuzu
 - Installation: Required
 ''';
 
+const String _marketContent = '''# Market Özelliği Kullanım Kılavuzu
+
+**Uygulama:** Azure DevOps Server 2022 Mobile App
+**Geliştirici:** Alpay Bilgiç
+**Versiyon:** 1.0.22+
+
+## Genel Bakış
+
+Market özelliği, Azure DevOps Git repository'den release'leri ve artifact'ları (APK/IPA) indirmenizi sağlar. Bu özellik sayesinde uygulamanın yeni versiyonlarını doğrudan mobil cihazınızdan indirebilirsiniz.
+
+## Kurulum
+
+### 1. Market Repository URL Ayarlama
+
+1. Uygulamayı açın
+2. Ana sayfada **Ayarlar** butonuna (⚙️ icon) tıklayın
+3. **Market Ayarları** bölümüne gidin
+4. **Market Repository URL** alanına Azure DevOps Git repository URL'sini girin
+
+#### URL Formatı
+
+```
+https://{instance}/{collection}/{project}/_git/{repository}
+```
+
+#### Örnek URL
+
+```
+https://devops.higgscloud.com/Dev/demo/_git/azuredevops-server-mobile
+```
+
+#### URL Bileşenleri
+
+- **instance:** Azure DevOps Server URL'si (örn: `devops.higgscloud.com`)
+- **collection:** Collection adı (örn: `Dev`)
+- **project:** Project adı (örn: `demo`)
+- **repository:** Git repository adı (örn: `azuredevops-server-mobile`)
+
+5. **Kaydet** butonuna tıklayın
+
+## Kullanım
+
+### 1. Market Sayfasına Erişim
+
+1. Ana sayfada **Market** butonuna (🏪 store icon) tıklayın
+2. Market sayfası açılır ve release'ler yüklenir
+
+### 2. Release'leri Görüntüleme
+
+- Release'ler en yeni önce sıralanır
+- Her release için şu bilgiler gösterilir:
+  - **Tag/Name:** Release adı (örn: `v1.0.22`)
+  - **Tarih:** Release tarihi (varsa)
+  - **Açıklama:** Release açıklaması (varsa)
+  - **Artifact'lar:** İndirilebilir dosyalar (APK, IPA, AAB)
+
+### 3. Artifact İndirme
+
+1. İstediğiniz release'i bulun
+2. İndirmek istediğiniz artifact'ın yanındaki **İndir** butonuna (⬇️ icon) tıklayın
+3. External browser/download manager açılır
+4. Dosya indirilir
+
+#### Desteklenen Artifact'lar
+
+- **Android APK:** `.apk` dosyaları (Android cihazlar için)
+- **iOS IPA:** `.ipa` dosyaları (iOS cihazlar için)
+- **Android AAB:** `.aab` dosyaları (Google Play Store için)
+
+### 4. Sayfayı Yenileme
+
+- Market sayfasını aşağı çekerek (pull-to-refresh) yenileyebilirsiniz
+- Veya sağ üstteki **Yenile** butonuna (🔄 icon) tıklayın
+
+## Sorun Giderme
+
+### Market Repository URL Ayarlanmamış
+
+**Hata:** "Market repository URL ayarlanmamış. Lütfen Ayarlar'dan repository URL'sini girin."
+
+**Çözüm:**
+1. Ayarlar sayfasına gidin
+2. Market Repository URL'yi girin
+3. Kaydet butonuna tıklayın
+4. Market sayfasını yenileyin
+
+### Release'ler Yüklenmiyor
+
+**Olası Nedenler:**
+- Repository URL'si yanlış formatlanmış
+- Authentication token geçersiz veya eksik
+- Network bağlantısı yok
+- Azure DevOps Server erişilemiyor
+
+**Çözüm:**
+1. Repository URL'sini kontrol edin
+2. Giriş yapıp yapmadığınızı kontrol edin
+3. Network bağlantınızı kontrol edin
+4. Azure DevOps Server'ın erişilebilir olduğunu kontrol edin
+
+### Artifact İndirme Başarısız
+
+**Olası Nedenler:**
+- Artifact dosyası repository'de bulunamıyor
+- Authentication token geçersiz
+- Dosya yolu yanlış
+
+**Çözüm:**
+1. Repository'de artifact'ların doğru klasörde olduğunu kontrol edin:
+   - Android APK: `releases/android/azuredevops-{version}.apk`
+   - iOS IPA: `releases/ios/azuredevops-{version}.ipa`
+2. Authentication token'ınızın geçerli olduğunu kontrol edin
+3. Giriş yapıp tekrar deneyin
+
+## Teknik Detaylar
+
+### API Kullanımı
+
+Market özelliği şu API'leri kullanır:
+
+1. **Azure DevOps Releases API** (öncelikli)
+   - Endpoint: `{instance}/{collection}/{project}/_apis/release/releases?api-version=6.0`
+   - Release'leri ve artifact'ları çeker
+
+2. **Git Tags API** (fallback)
+   - Endpoint: `{instance}/{collection}/{project}/_apis/git/repositories/{repoId}/refs?filter=tags&api-version=6.0`
+   - Tag'lerden release'leri çeker
+
+### Güvenlik
+
+- Tüm API çağrıları **Certificate Pinning** ile korunur
+- Authentication token ile güvenli indirme sağlanır
+- HTTPS üzerinden tüm iletişim yapılır
+
+### Artifact Yolu
+
+Artifact'lar şu klasörlerde aranır:
+
+- `releases/android/azuredevops-{version}.apk`
+- `releases/android/azuredevops.apk`
+- `releases/ios/azuredevops-{version}.ipa`
+- `releases/ios/azuredevops.ipa`
+- `releases/android/app-release.aab`
+
+## Örnek Kullanım Senaryosu
+
+### Senaryo: Yeni Versiyon İndirme
+
+1. **Bildirim:** Yeni versiyon (v1.0.23) yayınlandı
+2. **Market'e Git:** Ana sayfada Market butonuna tıkla
+3. **Release'i Bul:** v1.0.23 release'ini bul
+4. **APK İndir:** Android APK'nın yanındaki İndir butonuna tıkla
+5. **Kurulum:** İndirilen APK'yı kur (Android'de "Bilinmeyen kaynaklardan yükleme" izni gerekebilir)
+
+## Notlar
+
+- Market özelliği hem iOS hem Android'de çalışır
+- İndirme işlemi external browser/download manager üzerinden yapılır
+- Artifact'lar repository'de doğru klasörde olmalıdır
+- Authentication token geçerli olmalıdır
+- Network bağlantısı gereklidir
+
+## Destek
+
+Market özelliği ile ilgili sorunlar için:
+- Teknik destek: Geliştirici ile iletişime geçin
+- Repository sorunları: Azure DevOps yöneticisi ile iletişime geçin
+''';
+
 const String _overviewContent = '''# Azure DevOps Server 2022 Mobile App
 
 **Geliştirici:** Alpay Bilgiç

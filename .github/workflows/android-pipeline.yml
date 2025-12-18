@@ -345,6 +345,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Fix root_detector namespace
+        continue-on-error: true
+        run: |
+          echo "🔧 Fixing root_detector namespace issue..."
+          chmod +x scripts/fix_root_detector_namespace.sh || true
+          ./scripts/fix_root_detector_namespace.sh || echo "⚠️  root_detector namespace fix skipped"
+
       - name: Generate SBOM
         continue-on-error: true
         run: |

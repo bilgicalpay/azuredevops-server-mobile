@@ -26,10 +26,16 @@ cp "$ROOT_DETECTOR_PATH" "$ROOT_DETECTOR_PATH.bak"
 
 # Add namespace after android block starts
 if grep -q "android {" "$ROOT_DETECTOR_PATH"; then
-    # Add namespace line after android {
-    sed -i.bak '/android {/a\
+    # Use platform-specific sed command
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' '/android {/a\
     namespace = "space.wisnuwiry.root_detector"
 ' "$ROOT_DETECTOR_PATH"
+    else
+        # Linux
+        sed -i '/android {/a\    namespace = "space.wisnuwiry.root_detector"' "$ROOT_DETECTOR_PATH"
+    fi
     echo "✅ Added namespace to root_detector build.gradle"
 else
     echo "⚠️  Could not find android block in root_detector build.gradle"

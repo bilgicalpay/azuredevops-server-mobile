@@ -1,0 +1,27 @@
+// Fix for root_detector namespace issue
+// This file is applied to root_detector plugin to set namespace
+
+afterEvaluate {
+    if (project.hasProperty("android")) {
+        def android = project.extensions.findByName("android")
+        if (android != null) {
+            try {
+                // Try to get namespace from AndroidManifest.xml
+                def manifestFile = file("src/main/AndroidManifest.xml")
+                if (manifestFile.exists()) {
+                    def manifestContent = manifestFile.text
+                    def packageMatch = manifestContent =~ /package="([^"]+)"/
+                    if (packageMatch) {
+                        def namespace = packageMatch[0][1]
+                        // Set namespace using android block
+                        android.namespace = namespace
+                        println("✅ Set namespace for ${project.name}: $namespace")
+                    }
+                }
+            } catch (e) {
+                println("⚠️  Could not set namespace for ${project.name}: ${e.message}")
+            }
+        }
+    }
+}
+

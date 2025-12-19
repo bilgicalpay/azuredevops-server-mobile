@@ -51,7 +51,7 @@ class _MarketScreenState extends State<MarketScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
-      _currentFolderPath = null;
+      _currentFolderPath = ''; // Reset to root (empty string for easier path concatenation)
     });
 
     try {
@@ -84,7 +84,7 @@ class _MarketScreenState extends State<MarketScreen> {
         normalizedMarketUrl += '/';
       }
       
-      final baseUrl = _currentFolderPath != null 
+      final baseUrl = _currentFolderPath != null && _currentFolderPath!.isNotEmpty
           ? '$normalizedMarketUrl$_currentFolderPath'
           : normalizedMarketUrl;
       
@@ -227,6 +227,12 @@ class _MarketScreenState extends State<MarketScreen> {
     }
   }
 
+  /// Helper method to calculate full path from relative folder path
+  String _getFullPath(String relativePath) {
+    final currentPath = _currentFolderPath ?? '';
+    return currentPath.isEmpty ? relativePath : '$currentPath$relativePath';
+  }
+
   Future<void> _toggleFavorite(String folderPath) async {
     final storage = Provider.of<StorageService>(context, listen: false);
     
@@ -308,8 +314,8 @@ class _MarketScreenState extends State<MarketScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentFolderPath != null ? 'Market: $_currentFolderPath' : 'Market'),
-        leading: _currentFolderPath != null
+        title: Text(_currentFolderPath != null && _currentFolderPath!.isNotEmpty ? 'Market: $_currentFolderPath' : 'Market'),
+        leading: _currentFolderPath != null && _currentFolderPath!.isNotEmpty
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () {
@@ -407,24 +413,32 @@ class _MarketScreenState extends State<MarketScreen> {
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        _favoriteFolders.contains(folder.path)
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        color: _favoriteFolders.contains(folder.path)
-                                            ? Colors.amber
-                                            : Colors.grey,
-                                      ),
-                                      onPressed: () => _toggleFavorite(folder.path),
-                                      tooltip: _favoriteFolders.contains(folder.path)
-                                          ? 'Favorilerden kaldır'
-                                          : 'Favorilere ekle',
+                                    Builder(
+                                      builder: (context) {
+                                        final fullPath = _getFullPath(folder.path);
+                                        final isFavorite = _favoriteFolders.contains(fullPath);
+                                        return IconButton(
+                                          icon: Icon(
+                                            isFavorite ? Icons.star : Icons.star_border,
+                                            color: isFavorite ? Colors.amber : Colors.grey,
+                                          ),
+                                          onPressed: () => _toggleFavorite(fullPath),
+                                          tooltip: isFavorite
+                                              ? 'Favorilerden kaldır'
+                                              : 'Favorilere ekle',
+                                        );
+                                      },
                                     ),
                                     const Icon(Icons.chevron_right),
                                   ],
                                 ),
-                                onTap: () => _loadFolder(folder.path),
+                                onTap: () {
+                                  // CRITICAL FIX: Append folder.path to current path for multi-level navigation
+                                  // Example: current="market/ABC/", folder="1.0.29/" → full="market/ABC/1.0.29/"
+                                  // folder.path is always relative (e.g., "1.0.29/"), so we append it to current path
+                                  final fullPath = _getFullPath(folder.path);
+                                  _loadFolder(fullPath);
+                                },
                               ),
                             )),
                         const SizedBox(height: 16),

@@ -192,6 +192,22 @@ class _MarketScreenState extends State<MarketScreen> {
          a.name.toLowerCase().endsWith('.aab'))
       ).toList();
       
+      // CRITICAL: Filter folders to only show direct children of current directory
+      // This prevents parent directory folders from appearing in subdirectories
+      final validFolders = folders.where((folder) {
+        // folder.path should be a relative path like "ABC/" or "1.0.29/"
+        // It should NOT contain the current fullPath
+        // For example, if fullPath is "market/ABC/", folder.path should be "1.0.29/" not "market/DEF/"
+        
+        // Simple check: folder's path should not contain multiple segments beyond current level
+        final folderPathSegments = folder.path.split('/').where((s) => s.isNotEmpty).toList();
+        
+        // Direct child folders should have exactly 1 segment
+        // Example: if we're in "market/ABC/", valid folders are "1.0.29/", "1.0.30/" (1 segment each)
+        // Invalid would be "market/DEF/" (contains "market" which is parent)
+        return folderPathSegments.length == 1;
+      }).toList();
+      
       // Update tracked files for favorite folders
       if (_favoriteFolders.contains(fullPath)) {
         final fileNames = fileArtifacts.map((a) => a.name).toList();
@@ -199,7 +215,7 @@ class _MarketScreenState extends State<MarketScreen> {
       }
       
       setState(() {
-        _folders = folders;
+        _folders = validFolders; // Use filtered folders
         _artifacts = fileArtifacts;
         _isLoading = false;
       });

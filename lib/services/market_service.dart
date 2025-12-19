@@ -223,66 +223,82 @@ class MarketService {
           _logger.warning('Failed to decode href: $cleanHref');
         }
         
-        // Parse href to get its path segments
-        String hrefPath = cleanHref;
-        if (hrefPath.startsWith('/')) {
-          // Absolute path - extract relative part by comparing with basePath
-          final hrefPathSegments = hrefPath.split('/').where((s) => s.isNotEmpty).toList();
+        // SIMPLIFIED: Parse href to get relative path
+        String relativePath = '';
+        
+        if (cleanHref.startsWith('/')) {
+          // Absolute path like "/static/market/ABC/" or "/_static/market/ABC/"
+          // We need to extract only the part that comes AFTER the baseUrl path
+          final hrefUri = Uri.parse(cleanHref);
+          final hrefPathSegments = hrefUri.path.split('/').where((s) => s.isNotEmpty).toList();
           
-          // Find how many segments match with basePath
-          int matchCount = 0;
+          // Find the last segment that's different from base path
+          // For example: base="/static/market/" href="/_static/market/ABC/"
+          // We want just "ABC/"
+          int lastMatchIndex = -1;
           for (int i = 0; i < basePathSegments.length && i < hrefPathSegments.length; i++) {
-            if (basePathSegments[i] == hrefPathSegments[i]) {
-              matchCount++;
+            // Compare segments ignoring _static variations
+            String baseSegClean = basePathSegments[i].replaceAll('_static', '').replaceAll('static', '');
+            String hrefSegClean = hrefPathSegments[i].replaceAll('_static', '').replaceAll('static', '');
+            
+            if (baseSegClean == hrefSegClean || basePathSegments[i] == hrefPathSegments[i]) {
+              lastMatchIndex = i;
             } else {
               break;
             }
           }
           
-          // Extract relative part (everything after matching segments)
-          if (matchCount < hrefPathSegments.length) {
-            hrefPath = hrefPathSegments.sublist(matchCount).join('/');
-          } else {
-            // No match or exact match - use last segment only
-            hrefPath = hrefPathSegments.isNotEmpty ? hrefPathSegments.last : '';
+          // Extract the NEW segments (after the matching base path)
+          if (lastMatchIndex >= 0 && lastMatchIndex < hrefPathSegments.length - 1) {
+            // Get segments after the last match
+            final newSegments = hrefPathSegments.sublist(lastMatchIndex + 1);
+            relativePath = newSegments.join('/') + '/';
+          } else if (hrefPathSegments.isNotEmpty) {
+            // If no match, just use the last segment
+            relativePath = hrefPathSegments.last + '/';
           }
         } else {
-          // Relative path - use as is (but remove any leading ./)
-          if (hrefPath.startsWith('./')) {
-            hrefPath = hrefPath.substring(2);
+          // Relative path like "ABC/" or "./ABC/"
+          // Use as-is, just remove "./" prefix if present
+          relativePath = cleanHref;
+          if (relativePath.startsWith('./')) {
+            relativePath = relativePath.substring(2);
           }
         }
         
-        // Extract folder name - always use the last segment, and remove _static prefix if present
-        final pathSegments = hrefPath.split('/').where((s) => s.isNotEmpty).toList();
+        // Ensure trailing slash
+        if (!relativePath.endsWith('/')) {
+          relativePath += '/';
+        }
+        
+        // Extract clean folder name from relative path
+        final pathSegments = relativePath.split('/').where((s) => s.isNotEmpty).toList();
         if (pathSegments.isEmpty) continue;
         
-        String folderName = pathSegments.last;
+        // Get the FIRST segment as the folder name (for direct children)
+        String folderName = pathSegments.first;
         
         // Remove _static prefix from folder name if present
         if (folderName.startsWith('_static')) {
           folderName = folderName.substring('_static'.length);
-          if (folderName.isEmpty && pathSegments.length > 1) {
-            folderName = pathSegments[pathSegments.length - 2];
-          }
         }
         
         if (folderName.isEmpty) continue;
         
-        // Normalized path is just the folder name with trailing slash
-        // This ensures we always store relative paths like "ABC/" not "_static/market/ABC/"
-        final normalizedHref = '$folderName/';
+        // For the path stored in MarketFolder, use only the first segment
+        // This ensures "ABC/" not "ABC/1.0.29/" when we're listing subdirectories
+        final normalizedPath = pathSegments.length == 1 ? relativePath : '${pathSegments.first}/';
         
         // Build full path by appending to baseUrl
         final fullPath = baseUrl.endsWith('/') 
-            ? '$baseUrl$normalizedHref'
-            : '$baseUrl/$normalizedHref';
+            ? '$baseUrl$normalizedPath'
+            : '$baseUrl/$normalizedPath';
         
         // Check if folder already exists
-        if (!folders.any((f) => f.path == normalizedHref)) {
+        if (!folders.any((f) => f.path == normalizedPath)) {
           folders.add(MarketFolder(
             name: folderName,
-            path: normalizedHref,
+            path: normalizedPath,
             fullPath: fullPath,
           ));
         }

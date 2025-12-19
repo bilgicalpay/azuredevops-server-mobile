@@ -666,47 +666,16 @@ class MarketService {
     try {
       _logger.info('Downloading artifact on Android: ${artifact.name}');
       
-      // Downloads klasörünü al
-      Directory? downloadsDir;
-      if (Platform.isAndroid) {
-        try {
-          // Android için Downloads klasörünü bul
-          final externalDir = await getExternalStorageDirectory();
-          if (externalDir != null) {
-            // Android/Download veya Android/Downloads klasörünü dene
-            final downloadPath1 = path.join(externalDir.parent.path, 'Download');
-            final downloadPath2 = path.join(externalDir.parent.path, 'Downloads');
-            
-            if (await Directory(downloadPath1).exists()) {
-              downloadsDir = Directory(downloadPath1);
-            } else if (await Directory(downloadPath2).exists()) {
-              downloadsDir = Directory(downloadPath2);
-            } else {
-              // Klasör yoksa oluştur
-              downloadsDir = Directory(downloadPath1);
-              await downloadsDir.create(recursive: true);
-            }
-          }
-        } catch (e) {
-          _logger.warning('Could not access Downloads directory: $e');
-        }
-      }
+      // Önce uygulama dizinine indir (Android 10+ scoped storage için)
+      final appDir = await getApplicationDocumentsDirectory();
+      final tempFilePath = path.join(appDir.path, artifact.name);
       
-      if (downloadsDir == null || !await downloadsDir.exists()) {
-        // Fallback: Uygulama dizinine kaydet
-        downloadsDir = await getApplicationDocumentsDirectory();
-        _logger.info('Using fallback directory: ${downloadsDir.path}');
-      }
-      
-      final filePath = path.join(downloadsDir.path, artifact.name);
-      final file = File(filePath);
-      
-      _logger.info('Downloading to: $filePath');
+      _logger.info('Downloading to temporary location: $tempFilePath');
       
       final dio = CertificatePinningService.createSecureDio();
       await dio.download(
         artifact.downloadUrl,
-        filePath,
+        tempFilePath,
         onReceiveProgress: (received, total) {
           if (total != -1) {
             final progress = (received / total * 100).toStringAsFixed(0);
@@ -715,7 +684,42 @@ class MarketService {
         },
       );
       
-      _logger.info('Successfully downloaded: ${artifact.name} to $filePath');
+      _logger.info('File downloaded to temporary location: $tempFilePath');
+      
+      // Android 10+ için Downloads klasörüne kopyala
+      try {
+        // Android'in Downloads klasörüne erişmeye çalış
+        final externalDir = await getExternalStorageDirectory();
+        if (externalDir != null) {
+          // Android 10+ için Downloads klasörü
+          final downloadsPath = path.join(externalDir.parent.path, 'Download');
+          final downloadsDir = Directory(downloadsPath);
+          
+          // Klasör yoksa oluştur
+          if (!await downloadsDir.exists()) {
+            await downloadsDir.create(recursive: true);
+          }
+          
+          final finalFilePath = path.join(downloadsPath, artifact.name);
+          final tempFile = File(tempFilePath);
+          final finalFile = File(finalFilePath);
+          
+          // Dosyayı kopyala
+          await tempFile.copy(finalFilePath);
+          _logger.info('File copied to Downloads: $finalFilePath');
+          
+          // Geçici dosyayı sil
+          await tempFile.delete();
+          _logger.info('Temporary file deleted');
+        } else {
+          _logger.warning('Could not access external storage, file saved to app directory: $tempFilePath');
+        }
+      } catch (e) {
+        // Downloads klasörüne yazma başarısız, uygulama dizininde kalsın
+        _logger.warning('Could not copy to Downloads directory: $e');
+        _logger.info('File saved to app directory: $tempFilePath');
+        // Dosya uygulama dizininde kalacak, kullanıcıya bildirim gösterilebilir
+      }
       
     } catch (e) {
       _logger.severe('Error downloading file on Android: $e');

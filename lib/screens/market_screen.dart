@@ -42,7 +42,6 @@ class _MarketScreenState extends State<MarketScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authService = Provider.of<AuthService>(context, listen: false);
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _marketService = MarketService(authService);
       });
     });
@@ -50,7 +49,6 @@ class _MarketScreenState extends State<MarketScreen> {
 
   Future<void> _loadFolders() async {
     setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
       _isLoading = true;
       _error = null;
       _currentFolderPath = null;
@@ -62,7 +60,6 @@ class _MarketScreenState extends State<MarketScreen> {
 
       if (marketUrl == null || marketUrl.isEmpty) {
         setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
           _error = 'Market URL ayarlanmamış. Lütfen Ayarlar\'dan Market URL\'sini girin.\n\nÖrnek: https://devops.higgscloud.com/_static/market/';
           _isLoading = false;
         });
@@ -77,7 +74,6 @@ class _MarketScreenState extends State<MarketScreen> {
       // Load favorite folders
       final favorites = await storage.getFavoriteFolders();
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _favoriteFolders = favorites.toSet();
       });
 
@@ -127,14 +123,12 @@ class _MarketScreenState extends State<MarketScreen> {
       }
       
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _folders = folders;
         _artifacts = fileArtifacts;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _error = 'Klasörler yüklenirken hata oluştu: $e';
         _isLoading = false;
       });
@@ -143,7 +137,6 @@ class _MarketScreenState extends State<MarketScreen> {
 
   Future<void> _loadFolder(String folderPath) async {
     setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
       _isLoading = true;
       _error = null;
     });
@@ -154,7 +147,6 @@ class _MarketScreenState extends State<MarketScreen> {
 
       if (marketUrl == null || marketUrl.isEmpty) {
         setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
           _error = 'Market URL ayarlanmamış.';
           _isLoading = false;
         });
@@ -179,7 +171,6 @@ class _MarketScreenState extends State<MarketScreen> {
       
       // Update current folder path
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _currentFolderPath = fullPath;
       });
       
@@ -224,14 +215,12 @@ class _MarketScreenState extends State<MarketScreen> {
       }
       
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _folders = validFolders; // Use filtered folders
         _artifacts = fileArtifacts;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _error = 'Klasör yüklenirken hata oluştu: $e';
         _isLoading = false;
       });
@@ -244,7 +233,6 @@ class _MarketScreenState extends State<MarketScreen> {
     if (_favoriteFolders.contains(folderPath)) {
       await storage.removeFavoriteFolder(folderPath);
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _favoriteFolders.remove(folderPath);
       });
       if (mounted) {
@@ -258,7 +246,6 @@ class _MarketScreenState extends State<MarketScreen> {
     } else {
       await storage.addFavoriteFolder(folderPath);
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _favoriteFolders.add(folderPath);
       });
       if (mounted) {
@@ -278,7 +265,6 @@ class _MarketScreenState extends State<MarketScreen> {
     }
 
     setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
       _downloadingArtifact = artifact.name;
     });
 
@@ -306,7 +292,6 @@ class _MarketScreenState extends State<MarketScreen> {
       }
     } finally {
       setState(() {
-        _currentFolderPath = ''; // Reset to root when loading initial folders
         _downloadingArtifact = null;
       });
     }

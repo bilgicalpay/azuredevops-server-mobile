@@ -730,19 +730,46 @@ class MarketService {
   /// iOS için dosya indirme
   Future<void> _downloadFileIOS(Artifact artifact) async {
     try {
-      final uri = Uri.parse(artifact.downloadUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
-        _logger.info('Successfully launched download for: ${artifact.name}');
-      } else {
-        throw Exception('Could not launch ${artifact.downloadUrl}');
-      }
+      _logger.info('Downloading artifact on iOS: ${artifact.name}');
+      
+      // iOS'ta Documents dizinine indir (iOS sandbox içinde)
+      // iOS otomatik olarak dosyaları Files app'te gösterir
+      final appDir = await getApplicationDocumentsDirectory();
+      final filePath = path.join(appDir.path, artifact.name);
+      
+      _logger.info('Downloading to: $filePath');
+      
+      final dio = CertificatePinningService.createSecureDio();
+      await dio.download(
+        artifact.downloadUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            _logger.info('Download progress: $progress%');
+          }
+        },
+      );
+      
+      _logger.info('Successfully downloaded: ${artifact.name} to $filePath');
+      _logger.info('File is available in Files app under: ${appDir.path}');
+      
     } catch (e) {
-      _logger.severe('Error launching download on iOS: $e');
-      rethrow;
+      _logger.severe('Error downloading file on iOS: $e');
+      // Fallback: url_launcher kullan
+      try {
+        final uri = Uri.parse(artifact.downloadUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+          _logger.info('Fallback: Launched download via browser for: ${artifact.name}');
+        }
+      } catch (e2) {
+        _logger.severe('Fallback download also failed: $e2');
+        rethrow;
+      }
     }
   }
 }

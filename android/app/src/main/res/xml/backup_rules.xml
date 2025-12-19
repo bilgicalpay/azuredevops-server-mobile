@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup rules for Azure DevOps On-Premise app
+    
+    This file ensures that user settings, login credentials, and app preferences
+    are automatically backed up and restored when the app is reinstalled.
+    
+    Android Auto Backup (Android 6.0+) will automatically backup:
+    - SharedPreferences (including server_url, collection, wiki_url, etc.)
+    - EncryptedSharedPreferences (FlutterSecureStorage - auth_token, username, password)
+    - App-specific files in getFilesDir() and getDatabasePath()
+-->
+<full-backup-content>
+    <!-- Include all SharedPreferences files -->
+    <include domain="sharedpref" path="." />
+    
+    <!-- Include FlutterSecureStorage (EncryptedSharedPreferences) -->
+    <include domain="sharedpref" path="FlutterSecureStorage" />
+    
+    <!-- Include app-specific files if needed -->
+    <include domain="file" path="." />
+    
+    <!-- Exclude cache and temporary files -->
+    <exclude domain="file" path="cache/" />
+    <exclude domain="file" path="tmp/" />
+</full-backup-content>
+

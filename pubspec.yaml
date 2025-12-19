@@ -47,6 +47,8 @@ dependencies:
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^9.0.0  # Güvenli token saklama için
   provider: ^6.1.1
+  path_provider: ^2.1.2  # Android Downloads klasörü erişimi için
+  path: ^1.9.0  # Path işlemleri için
   
   # Tarih/saat ve uluslararasılaştırma
   intl: ^0.18.1

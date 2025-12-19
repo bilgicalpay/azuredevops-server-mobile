@@ -7,13 +7,16 @@
 library;
 
 import 'dart:convert';
+import 'dart:io' show Platform, File, Directory;
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/material.dart' show TargetPlatform;
 import 'package:logging/logging.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as html_dom;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 import 'auth_service.dart';
 import 'certificate_pinning_service.dart';
 
@@ -643,30 +646,98 @@ class MarketService {
   /// Download artifact
   Future<void> downloadArtifact(Artifact artifact) async {
     try {
-      final uri = Uri.parse(artifact.downloadUrl);
-      
-      // Check if URL can be launched
-      if (!await canLaunchUrl(uri)) {
-        throw Exception('Could not launch ${artifact.downloadUrl}');
-      }
-      
-      // Android için platformDefault kullan, iOS için externalApplication
-      // Android'de externalApplication bazen "couldn't launch" hatası veriyor
       final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-      final launchMode = isAndroid 
-          ? LaunchMode.platformDefault 
-          : LaunchMode.externalApplication;
       
-      _logger.info('Downloading artifact: ${artifact.name} (${isAndroid ? "Android" : "iOS/Other"})');
-      
-      await launchUrl(
-        uri,
-        mode: launchMode,
-      );
-      
-      _logger.info('Successfully launched download for: ${artifact.name}');
+      if (isAndroid) {
+        // Android: Dosyayı direkt indirip Downloads klasörüne kaydet
+        await _downloadFileAndroid(artifact);
+      } else {
+        // iOS/Other: url_launcher kullan
+        await _downloadFileIOS(artifact);
+      }
     } catch (e) {
       _logger.severe('Error downloading artifact: $e');
+      rethrow;
+    }
+  }
+  
+  /// Android için dosya indirme
+  Future<void> _downloadFileAndroid(Artifact artifact) async {
+    try {
+      _logger.info('Downloading artifact on Android: ${artifact.name}');
+      
+      // Downloads klasörünü al
+      Directory? downloadsDir;
+      if (Platform.isAndroid) {
+        try {
+          // Android için Downloads klasörünü bul
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            // Android/Download veya Android/Downloads klasörünü dene
+            final downloadPath1 = path.join(externalDir.parent.path, 'Download');
+            final downloadPath2 = path.join(externalDir.parent.path, 'Downloads');
+            
+            if (await Directory(downloadPath1).exists()) {
+              downloadsDir = Directory(downloadPath1);
+            } else if (await Directory(downloadPath2).exists()) {
+              downloadsDir = Directory(downloadPath2);
+            } else {
+              // Klasör yoksa oluştur
+              downloadsDir = Directory(downloadPath1);
+              await downloadsDir.create(recursive: true);
+            }
+          }
+        } catch (e) {
+          _logger.warning('Could not access Downloads directory: $e');
+        }
+      }
+      
+      if (downloadsDir == null || !await downloadsDir.exists()) {
+        // Fallback: Uygulama dizinine kaydet
+        downloadsDir = await getApplicationDocumentsDirectory();
+        _logger.info('Using fallback directory: ${downloadsDir.path}');
+      }
+      
+      final filePath = path.join(downloadsDir.path, artifact.name);
+      final file = File(filePath);
+      
+      _logger.info('Downloading to: $filePath');
+      
+      final dio = CertificatePinningService.createSecureDio();
+      await dio.download(
+        artifact.downloadUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            _logger.info('Download progress: $progress%');
+          }
+        },
+      );
+      
+      _logger.info('Successfully downloaded: ${artifact.name} to $filePath');
+      
+    } catch (e) {
+      _logger.severe('Error downloading file on Android: $e');
+      rethrow;
+    }
+  }
+  
+  /// iOS için dosya indirme
+  Future<void> _downloadFileIOS(Artifact artifact) async {
+    try {
+      final uri = Uri.parse(artifact.downloadUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        _logger.info('Successfully launched download for: ${artifact.name}');
+      } else {
+        throw Exception('Could not launch ${artifact.downloadUrl}');
+      }
+    } catch (e) {
+      _logger.severe('Error launching download on iOS: $e');
       rethrow;
     }
   }

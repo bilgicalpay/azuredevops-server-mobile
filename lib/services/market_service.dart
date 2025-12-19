@@ -214,17 +214,57 @@ class MarketService {
         folderName = folderName.replaceAll('/', '').trim();
         
         if (folderName.isNotEmpty) {
-          // Normalize href - remove leading slash if present
+          // Normalize href - handle both relative and absolute paths
           String normalizedHref = href;
+          
+          // If href is absolute (starts with /), make it relative to baseUrl
           if (normalizedHref.startsWith('/')) {
             // Absolute path - extract relative path from baseUrl
             final baseUri = Uri.parse(baseUrl);
             final basePath = baseUri.path;
-            if (normalizedHref.startsWith(basePath)) {
-              normalizedHref = normalizedHref.substring(basePath.length);
+            
+            // Remove trailing slash from basePath for comparison
+            final cleanBasePath = basePath.endsWith('/') 
+                ? basePath.substring(0, basePath.length - 1) 
+                : basePath;
+            
+            // Remove leading slash from href for comparison
+            final cleanHref = normalizedHref.startsWith('/') 
+                ? normalizedHref.substring(1) 
+                : normalizedHref;
+            
+            // Check if href starts with basePath
+            if (cleanHref.startsWith(cleanBasePath)) {
+              // Extract relative path (remove basePath from href)
+              normalizedHref = cleanHref.substring(cleanBasePath.length);
+              // Remove leading slash if present
+              if (normalizedHref.startsWith('/')) {
+                normalizedHref = normalizedHref.substring(1);
+              }
             } else {
-              // Path doesn't match base, skip it
-              continue;
+              // Path doesn't match base, try to extract just the relative part
+              // For example: /_static/market/ABC/1.0.29/ from base /_static/market/ABC/
+              // We want: 1.0.29/
+              final baseParts = cleanBasePath.split('/').where((p) => p.isNotEmpty).toList();
+              final hrefParts = cleanHref.split('/').where((p) => p.isNotEmpty).toList();
+              
+              // Find where baseParts end in hrefParts
+              int matchIndex = 0;
+              for (int i = 0; i < baseParts.length && i < hrefParts.length; i++) {
+                if (baseParts[i] == hrefParts[i]) {
+                  matchIndex = i + 1;
+                } else {
+                  break;
+                }
+              }
+              
+              // Extract relative path (everything after baseParts)
+              if (matchIndex < hrefParts.length) {
+                normalizedHref = hrefParts.sublist(matchIndex).join('/');
+              } else {
+                // No match, skip this folder
+                continue;
+              }
             }
           }
           

@@ -21,9 +21,12 @@ class StorageService extends ChangeNotifier {
       encryptedSharedPreferences: true, // Android EncryptedSharedPreferences kullan
       sharedPreferencesName: 'FlutterSecureStorage',
       preferencesKeyPrefix: 'flutter_secure_storage_',
+      // Android Auto Backup ile otomatik olarak yedeklenir
+      // EncryptedSharedPreferences Android 6.0+ Auto Backup ile korunur
     ),
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device, // iOS Keychain kullan
+      // iOS Keychain otomatik olarak iCloud Backup ile yedeklenir (ayarlar açıksa)
     ),
   );
   

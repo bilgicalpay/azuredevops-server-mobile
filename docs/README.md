@@ -27,23 +27,33 @@ Bu uygulama, Azure DevOps Server 2022 on-premise kurulumları için mobil erişi
 
 ## Dokümantasyon
 
+### Mimari ve Topoloji
+
+1. **[ARCHITECTURE.md](ARCHITECTURE.md)** - Mimari topoloji dokümantasyonu
+   - Mimari katmanlar
+   - Bileşen diyagramları
+   - Veri akışı
+   - Güvenlik mimarisi
+   - Deployment topolojisi
+   - Teknoloji stack
+
 ### Güvenlik ve Altyapı
 
-1. **[SECURITY.md](SECURITY.md)** - Güvenlik dokümantasyonu
+2. **[SECURITY.md](SECURITY.md)** - Güvenlik dokümantasyonu
    - Güvenlik mimarisi
    - Kimlik doğrulama
    - Veri güvenliği
    - Ağ güvenliği
    - Güvenlik açıkları ve önlemler
 
-2. **[INFRASTRUCTURE.md](INFRASTRUCTURE.md)** - Altyapı dokümantasyonu
+3. **[INFRASTRUCTURE.md](INFRASTRUCTURE.md)** - Altyapı dokümantasyonu
    - Sistem gereksinimleri
    - Ağ yapılandırması
    - Sertifika yönetimi
    - Dağıtım adımları
    - İzleme ve bakım
 
-3. **[MDM_INTEGRATION.md](MDM_INTEGRATION.md)** - MDM entegrasyon kılavuzu
+4. **[MDM_INTEGRATION.md](MDM_INTEGRATION.md)** - MDM entegrasyon kılavuzu
    - Microsoft Intune entegrasyonu
    - VMware Workspace ONE entegrasyonu
    - Yapılandırma profilleri

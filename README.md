@@ -619,7 +619,7 @@ Detaylı release notları için [RELEASE_NOTES.md](RELEASE_NOTES.md) dosyasına 
 
 **Güvenlik Sorunları:**
 - E-posta: bilgicalpay@gmail.com
-- Repository: https://github.com/bilgicalpay/azuredevops-server-mobile
+- Repository: https://github.com/bilgicalpay/azuredevops-mobile
 
 ## 📄 Lisans
 

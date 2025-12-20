@@ -329,6 +329,6 @@ gh release create vX.Y.Z \
 
 ---
 
-**Son Güncelleme:** 2024-12-20  
+**Son Güncelleme:** 2025-01-21  
 **Versiyon:** 1.0
 

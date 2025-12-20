@@ -3,7 +3,7 @@
 **Uygulama:** Azure DevOps Server 2022 Mobile App  
 **Geliştirici:** Alpay Bilgiç  
 **Versiyon:** 1.2.0+46  
-**Tarih:** 2024-12-20
+**Tarih:** 2025-01-21
 
 ## Genel Bakış
 
@@ -503,6 +503,6 @@ graph TB
 
 ---
 
-**Son Güncelleme:** 2024-12-20  
+**Son Güncelleme:** 2025-01-21  
 **Dokümantasyon Versiyonu:** 1.2.0
 

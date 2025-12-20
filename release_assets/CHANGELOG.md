@@ -2,7 +2,7 @@
 
 Bu proje [Semantic Versioning](https://semver.org/) kullanmaktadır.
 
-## [1.1.0] - 2024-12-20
+## [1.1.0] - 2025-01-21
 
 ### 🆕 Yeni Özellikler
 

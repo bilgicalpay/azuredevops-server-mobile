@@ -690,19 +690,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onPressed: () async {
                           try {
                             final url = Uri.parse('https://buymeacoffee.com/bilgicalpay');
-                            // Use platformDefault to open in browser
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(
-                                url,
-                                mode: LaunchMode.platformDefault,
-                              );
-                            } else {
-                              // Fallback: try without canLaunchUrl check
-                              await launchUrl(
-                                url,
-                                mode: LaunchMode.platformDefault,
-                              );
-                            }
+                            // Open in external browser
+                            await launchUrl(
+                              url,
+                              mode: LaunchMode.externalApplication,
+                            );
                           } catch (e) {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(

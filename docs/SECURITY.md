@@ -3,7 +3,7 @@
 **Uygulama:** Azure DevOps Server 2022 Mobile App  
 **Geliştirici:** Alpay Bilgiç  
 **Versiyon:** 1.2.0+46  
-**Son Güncelleme:** 2025-01-21
+**Son Güncelleme:** 21-12-2025
 
 ## İçindekiler
 
@@ -660,6 +660,6 @@ cosign verify-blob \
 
 ---
 
-**Son Güncelleme:** 2025-01-21  
+**Son Güncelleme:** 21-12-2025  
 **Dokümantasyon Versiyonu:** 2.1  
 **Uygulama Versiyonu:** 1.1.4+43

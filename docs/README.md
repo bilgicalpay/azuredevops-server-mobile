@@ -2,7 +2,7 @@
 
 **Geliştirici:** Alpay Bilgiç  
 **Versiyon:** 1.1.4+43  
-**Tarih:** 2025-01-21
+**Tarih:** 21-12-2025
 
 ## Genel Bakış
 
@@ -243,6 +243,6 @@ Bu uygulama kurumsal kullanım için geliştirilmiştir.
 
 ---
 
-**Son Güncelleme:** 2025-01-21  
+**Son Güncelleme:** 21-12-2025  
 **Dokümantasyon Versiyonu:** 1.1.4
 

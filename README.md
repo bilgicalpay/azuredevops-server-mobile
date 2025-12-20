@@ -2,7 +2,7 @@
 
 **Geliştirici:** Alpay Bilgiç  
 **Versiyon:** 1.2.0+45  
-**Tarih:** 2025-01-21
+**Tarih:** 21-12-2025
 
 ## 📱 Genel Bakış
 
@@ -594,7 +594,7 @@ docs/                            # Dokümantasyon
 
 ## 📝 Release Notes
 
-### v1.1.4+43 (2025-01-21)
+### v1.1.4+43 (21-12-2025)
 
 #### Yeni Özellikler
 - ✅ Türk Kültürü Popup (ana sayfada pull-to-refresh ile rastgele bilgiler)
@@ -655,5 +655,5 @@ Ticari kullanım için lütfen iletişime geçin:
 ---
 
 **Geliştirici:** Alpay Bilgiç  
-**Son Güncelleme:** 2025-01-21  
+**Son Güncelleme:** 21-12-2025  
 **Versiyon:** 1.2.0+46

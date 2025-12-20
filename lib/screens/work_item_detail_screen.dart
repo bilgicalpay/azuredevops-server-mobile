@@ -1368,12 +1368,10 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
     ];
     
     String? stepsHtml;
-    String? foundFieldName;
     for (final fieldName in stepsFields) {
       if (allFields.containsKey(fieldName)) {
         stepsHtml = allFields[fieldName]?.toString();
         if (stepsHtml != null && stepsHtml.isNotEmpty) {
-          foundFieldName = fieldName;
           debugPrint('✅ [Steps] Found Steps field: $fieldName');
           break;
         }

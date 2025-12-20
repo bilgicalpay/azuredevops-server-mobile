@@ -203,5 +203,17 @@
   "noGroupsAdded": "ابھی تک کوئی گروپ شامل نہیں کیا گیا۔ اوپر سے گروپ کا نام شامل کریں۔",
   "@noGroupsAdded": {
     "description": "No groups added message"
+  },
+  "donate": "عطیہ کریں",
+  "@donate": {
+    "description": "Donate button text"
+  },
+  "donateDescription": "اس ایپ کی ترقی کی حمایت کریں",
+  "@donateDescription": {
+    "description": "Donate section description"
+  },
+  "donateButton": "مجھے ایک کافی خریدیں",
+  "@donateButton": {
+    "description": "Donate button label"
   }
 }

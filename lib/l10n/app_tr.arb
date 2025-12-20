@@ -50,6 +50,9 @@
   "settingsSaved": "Ayarlar kaydedildi",
   "invalidUrl": "Geçerli bir URL girin",
   "invalidPollingInterval": "Polling interval 5-300 saniye arasında olmalıdır",
-  "noGroupsAdded": "Henüz grup eklenmedi. Yukarıdan grup adı girerek ekleyin."
+  "noGroupsAdded": "Henüz grup eklenmedi. Yukarıdan grup adı girerek ekleyin.",
+  "donate": "Bağış Yap",
+  "donateDescription": "Bu uygulamanın geliştirilmesini destekleyin",
+  "donateButton": "Bana Bir Kahve Ismarla"
 }
 

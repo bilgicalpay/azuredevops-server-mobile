@@ -203,5 +203,17 @@
   "noGroupsAdded": "Nog geen groepen toegevoegd. Voeg hierboven een groepsnaam toe.",
   "@noGroupsAdded": {
     "description": "No groups added message"
+  },
+  "donate": "Doneren",
+  "@donate": {
+    "description": "Donate button text"
+  },
+  "donateDescription": "Ondersteun de ontwikkeling van deze app",
+  "@donateDescription": {
+    "description": "Donate section description"
+  },
+  "donateButton": "Koop me een Koffie",
+  "@donateButton": {
+    "description": "Donate button label"
   }
 }

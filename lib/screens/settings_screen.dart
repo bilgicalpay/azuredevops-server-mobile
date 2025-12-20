@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:azuredevops_onprem/l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/storage_service.dart';
 import '../services/auth_service.dart';
 import 'dart:ui' show Locale;
@@ -637,6 +638,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: Text(l10n.collection),
                 subtitle: Text(
                   Provider.of<StorageService>(context).getCollection() ?? 'N/A',
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Donate Section
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.favorite, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.donate,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.donateDescription,
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final url = Uri.parse('https://buymeacoffee.com/bilgicalpay');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Could not open ${url.toString()}'),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.coffee),
+                        label: Text(l10n.donateButton),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

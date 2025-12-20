@@ -203,5 +203,17 @@
   "noGroupsAdded": "Aucun groupe ajouté pour le moment. Ajoutez un nom de groupe ci-dessus.",
   "@noGroupsAdded": {
     "description": "No groups added message"
+  },
+  "donate": "Faire un Don",
+  "@donate": {
+    "description": "Donate button text"
+  },
+  "donateDescription": "Soutenez le développement de cette application",
+  "@donateDescription": {
+    "description": "Donate section description"
+  },
+  "donateButton": "Offrez-moi un Café",
+  "@donateButton": {
+    "description": "Donate button label"
   }
 }

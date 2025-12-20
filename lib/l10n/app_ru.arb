@@ -203,5 +203,17 @@
   "noGroupsAdded": "Группы еще не добавлены. Добавьте имя группы выше.",
   "@noGroupsAdded": {
     "description": "No groups added message"
+  },
+  "donate": "Пожертвовать",
+  "@donate": {
+    "description": "Donate button text"
+  },
+  "donateDescription": "Поддержите разработку этого приложения",
+  "@donateDescription": {
+    "description": "Donate section description"
+  },
+  "donateButton": "Купите мне кофе",
+  "@donateButton": {
+    "description": "Donate button label"
   }
 }

@@ -203,5 +203,17 @@
   "noGroupsAdded": "अभी तक कोई समूह नहीं जोड़ा गया है। ऊपर से समूह नाम जोड़ें।",
   "@noGroupsAdded": {
     "description": "No groups added message"
+  },
+  "donate": "दान करें",
+  "@donate": {
+    "description": "Donate button text"
+  },
+  "donateDescription": "इस ऐप के विकास का समर्थन करें",
+  "@donateDescription": {
+    "description": "Donate section description"
+  },
+  "donateButton": "मुझे एक कॉफी खरीदें",
+  "@donateButton": {
+    "description": "Donate button label"
   }
 }

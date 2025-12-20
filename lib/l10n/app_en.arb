@@ -203,6 +203,18 @@
   "noGroupsAdded": "No groups added yet. Add a group name above.",
   "@noGroupsAdded": {
     "description": "No groups added message"
+  },
+  "donate": "Donate",
+  "@donate": {
+    "description": "Donate button text"
+  },
+  "donateDescription": "Support the development of this app",
+  "@donateDescription": {
+    "description": "Donate section description"
+  },
+  "donateButton": "Buy Me a Coffee",
+  "@donateButton": {
+    "description": "Donate button label"
   }
 }
 

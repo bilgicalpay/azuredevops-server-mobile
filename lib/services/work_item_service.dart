@@ -819,8 +819,8 @@ class WorkItemService {
           ? '$cleanUrl/$collection'
           : cleanUrl;
 
-      // Get work item with relations (use expand=relations to get relations)
-      final url = '$baseUrl/_apis/wit/workitems/$workItemId?\$expand=relations&api-version=7.0';
+      // Get work item with all fields and relations (use expand=all to get all fields including custom fields)
+      final url = '$baseUrl/_apis/wit/workitems/$workItemId?\$expand=all&api-version=7.0';
       
       final response = await _dio.get(
         url,

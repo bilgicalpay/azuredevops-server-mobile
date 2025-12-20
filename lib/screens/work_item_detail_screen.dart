@@ -80,7 +80,8 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
         ? '$cleanUrl/${storage.getCollection()}'
         : cleanUrl;
 
-    final url = '$baseUrl/_apis/wit/workitems/${widget.workItem.id}?\$expand=relations&api-version=7.0';
+    // Get work item with all fields (use expand=all to get all fields including custom fields)
+    final url = '$baseUrl/_apis/wit/workitems/${widget.workItem.id}?\$expand=all&api-version=7.0';
     
     debugPrint('🔄 [UI] Fetching work item details from: $url');
     
@@ -157,37 +158,65 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
         _fieldDefinitions = fieldDefs;
       });
 
-      // Initialize field controllers and combo box values for custom fields
+      // Initialize field controllers and combo box values for ALL non-hidden fields
+      // First, get all fields from field definitions (non-hidden)
+      final allNonHiddenFields = <String, FieldDefinition>{};
+      for (var entry in fieldDefs.entries) {
+        if (!entry.value.isHidden && !entry.key.startsWith('System.')) {
+          allNonHiddenFields[entry.key] = entry.value;
+        }
+      }
+      
+      // Also include fields from allFields that might not be in field definitions
       if (detailedItem.allFields != null) {
         for (var entry in detailedItem.allFields!.entries) {
           // Skip System fields (they're handled separately)
           if (entry.key.startsWith('System.')) continue;
           
-          final fieldDef = fieldDefs[entry.key];
-          
-          // Skip hidden fields
-          if (fieldDef != null && fieldDef.isHidden) {
-            continue;
-          }
-          
-          final currentValue = entry.value?.toString() ?? '';
-          final fieldType = fieldDef?.type ?? '';
-          
-          // Check if it's a boolean field (tickbox)
-          if (entry.value is bool || fieldType == 'boolean') {
-            // Boolean field - store as string for now, will handle in UI
-            _comboBoxValues[entry.key] = (entry.value as bool? ?? false).toString();
-          }
-          // Check if field has allowed values (combo box/selectbox)
-          else if (fieldDef != null && fieldDef.isComboBox && fieldDef.allowedValues.isNotEmpty) {
-            // Combo box/selectbox field
-            _comboBoxValues[entry.key] = currentValue.isEmpty ? null : currentValue;
-          } else if (entry.value is String || entry.value is num) {
-            // Regular text/number field
-            _fieldControllers[entry.key] = TextEditingController(
-              text: currentValue,
+          // If field is not in field definitions, add it (might be a custom field)
+          if (!allNonHiddenFields.containsKey(entry.key)) {
+            // Try to infer type from value
+            String fieldType = 'string';
+            if (entry.value is bool) {
+              fieldType = 'boolean';
+            } else if (entry.value is num) {
+              fieldType = 'double';
+            }
+            
+            allNonHiddenFields[entry.key] = FieldDefinition(
+              referenceName: entry.key,
+              name: entry.key,
+              type: fieldType,
+              allowedValues: [],
+              isComboBox: false,
+              isHidden: false,
             );
           }
+        }
+      }
+      
+      // Now initialize controllers for all non-hidden fields
+      for (var entry in allNonHiddenFields.entries) {
+        final fieldKey = entry.key;
+        final fieldDef = entry.value;
+        final fieldValue = detailedItem.allFields?[fieldKey];
+        final currentValue = fieldValue?.toString() ?? '';
+        final fieldType = fieldDef.type;
+        
+        // Check if it's a boolean field (tickbox)
+        if (fieldValue is bool || fieldType == 'boolean') {
+          // Boolean field - store as string for now, will handle in UI
+          _comboBoxValues[fieldKey] = (fieldValue as bool? ?? false).toString();
+        }
+        // Check if field has allowed values (combo box/selectbox)
+        else if (fieldDef.isComboBox && fieldDef.allowedValues.isNotEmpty) {
+          // Combo box/selectbox field
+          _comboBoxValues[fieldKey] = currentValue.isEmpty ? null : currentValue;
+        } else if (fieldValue is String || fieldValue is num || fieldValue == null) {
+          // Regular text/number field (or empty field)
+          _fieldControllers[fieldKey] = TextEditingController(
+            text: currentValue,
+          );
         }
       }
       

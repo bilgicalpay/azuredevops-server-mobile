@@ -1555,8 +1555,11 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
     return widgets;
   }
   
-  /// Parse Steps HTML from work item fields
-  void _parseSteps(Map<String, dynamic>? allFields) {
+  // Steps parsing removed - no longer needed
+  
+  // Old Steps parsing code removed
+  /*
+  void _parseSteps_OLD(Map<String, dynamic>? allFields) {
     _steps = [];
     
     if (allFields == null) {

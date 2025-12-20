@@ -1404,7 +1404,7 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
         
         for (var stepMatch in stepMatches) {
           final stepContent = stepMatch.group(1) ?? '';
-          debugPrint('🔍 [Steps] Step content length: ${stepContent.length}');
+          debugPrint('🔍 [Steps] Step content (first 300 chars): ${stepContent.substring(0, stepContent.length > 300 ? 300 : stepContent.length)}');
           
           // Try to find parameterizedstring tags within the step
           // Match both with and without quotes around type attribute
@@ -1417,8 +1417,26 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
           String? action = actionMatch?.group(1)?.trim();
           String? expectedResult = expectedResultMatch?.group(1)?.trim();
           
-          debugPrint('🔍 [Steps] Action found: ${action != null}, length: ${action?.length ?? 0}');
-          debugPrint('🔍 [Steps] ExpectedResult found: ${expectedResult != null}, length: ${expectedResult?.length ?? 0}');
+          debugPrint('🔍 [Steps] Action regex match: ${actionMatch != null}');
+          if (actionMatch != null) {
+            debugPrint('🔍 [Steps] Action group(1): "${actionMatch.group(1)?.substring(0, actionMatch.group(1)!.length > 100 ? 100 : actionMatch.group(1)!.length) ?? "null"}"');
+          }
+          debugPrint('🔍 [Steps] ExpectedResult regex match: ${expectedResultMatch != null}');
+          if (expectedResultMatch != null) {
+            debugPrint('🔍 [Steps] ExpectedResult group(1): "${expectedResultMatch.group(1)?.substring(0, expectedResultMatch.group(1)!.length > 100 ? 100 : expectedResultMatch.group(1)!.length) ?? "null"}"');
+          }
+          
+          // If parameterizedstring not found, try to extract content directly from step tag
+          if (action == null && expectedResult == null) {
+            debugPrint('⚠️ [Steps] No parameterizedstring found, trying to extract content directly from step');
+            // Try to get all text content from step (remove all tags)
+            final textContent = stepContent.replaceAll(RegExp(r'<[^>]+>'), '').trim();
+            if (textContent.isNotEmpty) {
+              debugPrint('🔍 [Steps] Found text content in step: "$textContent"');
+              // Assume it's action if no type specified
+              action = textContent;
+            }
+          }
           
           // If no parameterizedstring found, try to parse by step type attribute
           if (action == null && expectedResult == null) {

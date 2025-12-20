@@ -1645,144 +1645,44 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
         
         debugPrint('🔍 [Steps] Found ${stepMatches.length} step elements');
         
+        // Parse each step - find all parameterizedstring tags first
+        final allParamStrings = RegExp('<parameterizedstring[^>]*>(.*?)</parameterizedstring>', dotAll: true, caseSensitive: false);
+        
         for (var stepMatch in stepMatches) {
           final stepContent = stepMatch.group(1) ?? '';
-          debugPrint('🔍 [Steps] Step content (first 300 chars): ${stepContent.substring(0, stepContent.length > 300 ? 300 : stepContent.length)}');
-          
-          // Try to find parameterizedstring tags within the step
-          // Match both with and without quotes around type attribute
-          // Also try different variations: ExpectedResult, Expected Result, ExpectedResult, etc.
-          final actionRegex = RegExp('<parameterizedstring[^>]*type\\s*=\\s*["\']?Action["\']?[^>]*>(.*?)</parameterizedstring>', dotAll: true, caseSensitive: false);
-          final expectedResultRegex1 = RegExp('<parameterizedstring[^>]*type\\s*=\\s*["\']?ExpectedResult["\']?[^>]*>(.*?)</parameterizedstring>', dotAll: true, caseSensitive: false);
-          final expectedResultRegex2 = RegExp('<parameterizedstring[^>]*type\\s*=\\s*["\']?Expected\\s+Result["\']?[^>]*>(.*?)</parameterizedstring>', dotAll: true, caseSensitive: false);
-          final expectedResultRegex3 = RegExp('<parameterizedstring[^>]*type\\s*=\\s*["\']?Expected["\']?[^>]*>(.*?)</parameterizedstring>', dotAll: true, caseSensitive: false);
-          
-          // Also try to find all parameterizedstring tags and match by type attribute
-          final allParamStrings = RegExp('<parameterizedstring[^>]*>(.*?)</parameterizedstring>', dotAll: true, caseSensitive: false);
-          final allMatches = allParamStrings.allMatches(stepContent);
           
           String? action;
           String? expectedResult;
           
-          // First try direct regex
-          final actionMatch = actionRegex.firstMatch(stepContent);
-          final expectedResultMatch1 = expectedResultRegex1.firstMatch(stepContent);
-          final expectedResultMatch2 = expectedResultRegex2.firstMatch(stepContent);
-          final expectedResultMatch3 = expectedResultRegex3.firstMatch(stepContent);
+          // Find all parameterizedstring tags in this step
+          final paramMatches = allParamStrings.allMatches(stepContent);
           
-          final expectedResultMatch = expectedResultMatch1 ?? expectedResultMatch2 ?? expectedResultMatch3;
-          
-          action = actionMatch?.group(1)?.trim();
-          expectedResult = expectedResultMatch?.group(1)?.trim();
-          
-          // If not found, try to find by iterating all parameterizedstring tags
-          if (action == null || expectedResult == null) {
-            for (var match in allMatches) {
-              final fullTag = match.group(0) ?? '';
-              final typeAttr = RegExp('type\\s*=\\s*["\']?([^"\']+)["\']?', caseSensitive: false).firstMatch(fullTag);
-              final type = typeAttr?.group(1)?.toLowerCase() ?? '';
-              final content = match.group(1)?.trim() ?? '';
-              
-              if (type.contains('action') && action == null) {
-                action = content;
-                debugPrint('🔍 [Steps] Found Action from allMatches: type=$type');
-              } else if ((type.contains('expected') || type.contains('result')) && expectedResult == null) {
-                expectedResult = content;
-                debugPrint('🔍 [Steps] Found ExpectedResult from allMatches: type=$type');
-              }
+          for (var paramMatch in paramMatches) {
+            final fullTag = paramMatch.group(0) ?? '';
+            final content = paramMatch.group(1)?.trim() ?? '';
+            
+            // Extract type attribute
+            final typeMatch = RegExp('type\\s*=\\s*["\']?([^"\']+)["\']?', caseSensitive: false).firstMatch(fullTag);
+            final type = typeMatch?.group(1)?.toLowerCase() ?? '';
+            
+            if (type.contains('action')) {
+              action = content;
+            } else if (type.contains('expected') || type.contains('result')) {
+              expectedResult = content;
             }
           }
           
-          debugPrint('🔍 [Steps] Action regex match: ${actionMatch != null}');
-          if (actionMatch != null) {
-            debugPrint('🔍 [Steps] Action group(1): "${actionMatch.group(1)?.substring(0, actionMatch.group(1)!.length > 100 ? 100 : actionMatch.group(1)!.length) ?? "null"}"');
-          }
-          debugPrint('🔍 [Steps] ExpectedResult regex match: ${expectedResultMatch != null}');
-          if (expectedResultMatch != null) {
-            debugPrint('🔍 [Steps] ExpectedResult group(1): "${expectedResultMatch.group(1)?.substring(0, expectedResultMatch.group(1)!.length > 100 ? 100 : expectedResultMatch.group(1)!.length) ?? "null"}"');
-          } else {
-            debugPrint('⚠️ [Steps] ExpectedResult not found. Trying to find all parameterizedstring tags...');
-            // Try to find all parameterizedstring tags to see what we have
-            final allParamStrings = RegExp('<parameterizedstring[^>]*>(.*?)</parameterizedstring>', dotAll: true, caseSensitive: false);
-            final allMatches = allParamStrings.allMatches(stepContent);
-            debugPrint('🔍 [Steps] Found ${allMatches.length} parameterizedstring tags in step');
-            for (var match in allMatches) {
-              final typeAttr = RegExp('type\\s*=\\s*["\']?([^"\']+)["\']?', caseSensitive: false).firstMatch(match.group(0) ?? '');
-              final type = typeAttr?.group(1) ?? 'unknown';
-              debugPrint('🔍 [Steps] Found parameterizedstring with type: "$type", content: "${match.group(1)?.substring(0, match.group(1)!.length > 50 ? 50 : match.group(1)!.length) ?? "null"}"');
-            }
-          }
+          // Decode HTML entities
+          String decodedAction = (action ?? '').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&').replaceAll('&quot;', '"').replaceAll('&apos;', "'");
+          String decodedExpectedResult = (expectedResult ?? '').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&').replaceAll('&quot;', '"').replaceAll('&apos;', "'");
           
-          // If we found action or expectedResult, add the step (even if one is missing)
-          if (action != null || expectedResult != null) {
-            // Decode HTML entities if needed
-            String decodedAction = action ?? '';
-            String decodedExpectedResult = expectedResult ?? '';
-            
-            // Decode common HTML entities
-            decodedAction = decodedAction
-                .replaceAll('&lt;', '<')
-                .replaceAll('&gt;', '>')
-                .replaceAll('&amp;', '&')
-                .replaceAll('&quot;', '"')
-                .replaceAll('&apos;', "'");
-            
-            decodedExpectedResult = decodedExpectedResult
-                .replaceAll('&lt;', '<')
-                .replaceAll('&gt;', '>')
-                .replaceAll('&amp;', '&')
-                .replaceAll('&quot;', '"')
-                .replaceAll('&apos;', "'");
-            
-            debugPrint('✅ [Steps] Adding step: Action="${decodedAction.substring(0, decodedAction.length > 50 ? 50 : decodedAction.length)}...", ExpectedResult="${decodedExpectedResult.substring(0, decodedExpectedResult.length > 50 ? 50 : decodedExpectedResult.length)}..."');
-            
+          // Only add if we have at least action
+          if (decodedAction.isNotEmpty || decodedExpectedResult.isNotEmpty) {
             _steps.add({
               'action': decodedAction,
               'expectedResult': decodedExpectedResult,
             });
-          }
-          // If no parameterizedstring found, try to extract content directly from step tag
-          else if (action == null && expectedResult == null) {
-            debugPrint('⚠️ [Steps] No parameterizedstring found, trying to extract content directly from step');
-            // Try to get all text content from step (remove all tags)
-            final textContent = stepContent.replaceAll(RegExp(r'<[^>]+>'), '').trim();
-            if (textContent.isNotEmpty) {
-              debugPrint('🔍 [Steps] Found text content in step: "$textContent"');
-              // Assume it's action if no type specified
-              String decodedAction = textContent
-                  .replaceAll('&lt;', '<')
-                  .replaceAll('&gt;', '>')
-                  .replaceAll('&amp;', '&')
-                  .replaceAll('&quot;', '"')
-                  .replaceAll('&apos;', "'");
-              
-              _steps.add({
-                'action': decodedAction,
-                'expectedResult': '',
-              });
-            }
-          }
-        }
-        
-        // If still no steps found, try simple parsing
-        if (_steps.isEmpty) {
-          debugPrint('⚠️ [Steps] No steps found with parameterizedstring, trying simple parsing');
-          final simpleStepRegex = RegExp(r'<step[^>]*>(.*?)</step>', dotAll: true);
-          final simpleMatches = simpleStepRegex.allMatches(stepsHtml);
-          final stepContents = simpleMatches.map((m) => m.group(1)?.trim() ?? '').where((s) => s.isNotEmpty).toList();
-          
-          for (int i = 0; i < stepContents.length; i += 2) {
-            if (i + 1 < stepContents.length) {
-              _steps.add({
-                'action': stepContents[i],
-                'expectedResult': stepContents[i + 1],
-              });
-            } else {
-              _steps.add({
-                'action': stepContents[i],
-                'expectedResult': '',
-              });
-            }
+            debugPrint('✅ [Steps] Added step ${_steps.length}: Action="${decodedAction.substring(0, decodedAction.length > 50 ? 50 : decodedAction.length)}...", ExpectedResult="${decodedExpectedResult.substring(0, decodedExpectedResult.length > 50 ? 50 : decodedExpectedResult.length)}..."');
           }
         }
       } else if (isDivFormat) {

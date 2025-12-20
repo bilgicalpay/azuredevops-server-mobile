@@ -1394,56 +1394,51 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
     // Parse HTML - Steps are typically in div structure
     // Example: <div><div>Action</div><div>Expected result</div></div><div><div>Step 1 action</div><div>Step 1 expected</div></div>...
     try {
-      // Remove HTML tags and extract text
-      // Simple regex-based parsing (can be improved with html package if needed)
+      // Parse HTML while preserving HTML content (not just text)
       final regex = RegExp(r'<div[^>]*>(.*?)</div>', dotAll: true);
       final matches = regex.allMatches(stepsHtml);
       
       List<String> cells = [];
       for (var match in matches) {
         final content = match.group(1)?.trim() ?? '';
-        // Remove nested divs and get text
-        final text = content
-            .replaceAll(RegExp(r'<[^>]+>'), '')
-            .replaceAll('&nbsp;', ' ')
-            .replaceAll('&amp;', '&')
-            .replaceAll('&lt;', '<')
-            .replaceAll('&gt;', '>')
-            .trim();
-        if (text.isNotEmpty) {
-          cells.add(text);
+        // Keep HTML content, don't strip tags
+        if (content.isNotEmpty) {
+          cells.add(content);
         }
       }
       
       // Steps are typically in pairs: Action, Expected result
       // Skip header row if exists (first two cells might be "Action" and "Expected result")
       int startIndex = 0;
-      if (cells.length >= 2 && 
-          (cells[0].toLowerCase().contains('action') || 
-           cells[1].toLowerCase().contains('expected'))) {
-        startIndex = 2;
+      if (cells.length >= 2) {
+        // Check if first two cells are headers (plain text, no HTML tags)
+        final firstCell = cells[0].replaceAll(RegExp(r'<[^>]+>'), '').toLowerCase();
+        final secondCell = cells[1].replaceAll(RegExp(r'<[^>]+>'), '').toLowerCase();
+        if (firstCell.contains('action') || secondCell.contains('expected')) {
+          startIndex = 2;
+        }
       }
       
-      // Parse pairs
+      // Parse pairs - keep HTML content
       for (int i = startIndex; i < cells.length; i += 2) {
         if (i + 1 < cells.length) {
           _steps.add({
-            'action': cells[i],
-            'expectedResult': cells[i + 1],
+            'action': cells[i], // Keep HTML
+            'expectedResult': cells[i + 1], // Keep HTML
           });
         } else {
           // Single cell (action only)
           _steps.add({
-            'action': cells[i],
+            'action': cells[i], // Keep HTML
             'expectedResult': '',
           });
         }
       }
     } catch (e) {
       debugPrint('Error parsing Steps: $e');
-      // If parsing fails, show as single text field
+      // If parsing fails, show as single text field with HTML
       _steps = [{
-        'action': stepsHtml.replaceAll(RegExp(r'<[^>]+>'), ' ').trim(),
+        'action': stepsHtml.trim(), // Keep HTML
         'expectedResult': '',
       }];
     }
@@ -1661,14 +1656,48 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
                   flex: 3,
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
-                    child: Text(_steps[index]['action'] ?? ''),
+                    child: _steps[index]['action'] != null && _steps[index]['action']!.isNotEmpty
+                        ? Html(
+                            data: _steps[index]['action']!,
+                            style: {
+                              "body": Style(
+                                margin: Margins.zero,
+                                padding: HtmlPaddings.zero,
+                                fontSize: FontSize(14),
+                              ),
+                            },
+                          )
+                        : const Text(
+                            '',
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey,
+                            ),
+                          ),
                   ),
                 ),
                 Expanded(
                   flex: 3,
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
-                    child: Text(_steps[index]['expectedResult'] ?? ''),
+                    child: _steps[index]['expectedResult'] != null && _steps[index]['expectedResult']!.isNotEmpty
+                        ? Html(
+                            data: _steps[index]['expectedResult']!,
+                            style: {
+                              "body": Style(
+                                margin: Margins.zero,
+                                padding: HtmlPaddings.zero,
+                                fontSize: FontSize(14),
+                              ),
+                            },
+                          )
+                        : const Text(
+                            '',
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey,
+                            ),
+                          ),
                   ),
                 ),
               ],

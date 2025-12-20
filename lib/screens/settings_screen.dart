@@ -611,6 +611,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: 'ur',
                           child: Text('اردو'),
                         ),
+                        const DropdownMenuItem<String>(
+                          value: 'ug',
+                          child: Text('ئۇيغۇرچە'),
+                        ),
+                        const DropdownMenuItem<String>(
+                          value: 'az',
+                          child: Text('Azərbaycan'),
+                        ),
+                        const DropdownMenuItem<String>(
+                          value: 'ky',
+                          child: Text('Кыргызча'),
+                        ),
+                        const DropdownMenuItem<String>(
+                          value: 'ja',
+                          child: Text('日本語'),
+                        ),
                       ],
                       onChanged: (value) async {
                         await storage.setSelectedLanguage(value ?? 'system');

@@ -144,6 +144,10 @@ class MyApp extends StatelessWidget {
               Locale('de', ''), // German
               Locale('fr', ''), // French
               Locale('ur', ''), // Urdu
+              Locale('ug', ''), // Uyghur
+              Locale('az', ''), // Azerbaijani
+              Locale('ky', ''), // Kyrgyz
+              Locale('ja', ''), // Japanese
             ],
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(

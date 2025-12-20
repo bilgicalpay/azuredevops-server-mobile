@@ -32,6 +32,7 @@ class RealtimeService {
   
   final WorkItemService _workItemService = WorkItemService();
   final NotificationService _notificationService = NotificationService();
+  StorageService? _storageService;
   Set<int> _knownWorkItemIds = {};
   
   // Callbacks
@@ -50,6 +51,9 @@ class RealtimeService {
     Function()? onDisconnected,
   }) async {
     print('🚀 [RealtimeService] Starting service...');
+    
+    // Store storage service for notification settings
+    _storageService = storageService;
     
     // Update callbacks even if already running
     this.onNewWorkItems = onNewWorkItems;
@@ -374,11 +378,16 @@ class RealtimeService {
           _workItemAssignees[workItem.id] = currentAssignee;
           _workItemChangedDates[workItem.id] = currentChangedDate;
           
-          await _notificationService.showWorkItemNotification(
-            workItemId: workItem.id,
-            title: workItem.title,
-            body: 'Size yeni bir work item atandı: ${workItem.type}',
-          );
+          // Bildirim ayarlarını kontrol et
+          if (await _shouldNotifyForWorkItem(workItem, isNew: true, wasAssigned: true)) {
+            await _notificationService.showWorkItemNotification(
+              workItemId: workItem.id,
+              title: workItem.title,
+              body: 'Size yeni bir work item atandı: ${workItem.type}',
+            );
+          } else {
+            print('🔕 [RealtimeService] Notification skipped for work item #${workItem.id} based on settings');
+          }
         } else {
           // Check for changes
           bool hasChanged = false;
@@ -422,16 +431,22 @@ class RealtimeService {
           
           if (hasChanged) {
             changedIds.add(workItem.id);
-            print('🔄 [RealtimeService] Work item #${workItem.id} changed, sending notification');
+            print('🔄 [RealtimeService] Work item #${workItem.id} changed, checking notification settings');
             
-            // Send notification with appropriate message
-            await _notificationService.showWorkItemNotification(
-              workItemId: workItem.id,
-              title: workItem.title,
-              body: changeMessage.isNotEmpty 
-                  ? changeMessage 
-                  : 'Work item güncellendi: ${workItem.state}',
-            );
+            // Bildirim ayarlarını kontrol et
+            final wasAssigned = knownAssignee == null && currentAssignee != null;
+            if (await _shouldNotifyForWorkItem(workItem, isNew: false, wasAssigned: wasAssigned)) {
+              // Send notification with appropriate message
+              await _notificationService.showWorkItemNotification(
+                workItemId: workItem.id,
+                title: workItem.title,
+                body: changeMessage.isNotEmpty 
+                    ? changeMessage 
+                    : 'Work item güncellendi: ${workItem.state}',
+              );
+            } else {
+              print('🔕 [RealtimeService] Notification skipped for work item #${workItem.id} based on settings');
+            }
           }
           
           // Update tracking even if no change detected (to keep data fresh)
@@ -502,6 +517,66 @@ class RealtimeService {
     _workItemRevisions.clear();
     _workItemAssignees.clear();
     _workItemChangedDates.clear();
+  }
+  
+  /// Check if notification should be sent based on user settings
+  Future<bool> _shouldNotifyForWorkItem(WorkItem workItem, {required bool isNew, required bool wasAssigned}) async {
+    try {
+      if (_storageService == null) {
+        // If storage service not available, default to sending notification
+        return true;
+      }
+      
+      // Get notification settings
+      final notifyOnFirstAssignment = _storageService!.getNotifyOnFirstAssignment();
+      final notifyOnAllUpdates = _storageService!.getNotifyOnAllUpdates();
+      final notifyOnHotfixOnly = _storageService!.getNotifyOnHotfixOnly();
+      final notifyOnGroupAssignments = _storageService!.getNotifyOnGroupAssignments();
+      final notificationGroups = await _storageService!.getNotificationGroups();
+      
+      // Sadece Hotfix filtresi
+      if (notifyOnHotfixOnly && workItem.type.toLowerCase() != 'hotfix') {
+        print('🔕 [RealtimeService] Skipping notification: Only Hotfix allowed, but type is ${workItem.type}');
+        return false;
+      }
+      
+      // İlk atamada bildirim kontrolü
+      if (isNew && wasAssigned) {
+        if (!notifyOnFirstAssignment) {
+          print('🔕 [RealtimeService] Skipping notification: First assignment notifications disabled');
+          return false;
+        }
+      }
+      
+      // Tüm güncellemelerde bildirim kontrolü
+      if (!isNew && !wasAssigned) {
+        if (!notifyOnAllUpdates) {
+          print('🔕 [RealtimeService] Skipping notification: All updates notifications disabled');
+          return false;
+        }
+      }
+      
+      // Grup atamalarında bildirim kontrolü
+      if (notifyOnGroupAssignments && notificationGroups.isNotEmpty) {
+        final assignedTo = workItem.assignedTo?.toLowerCase() ?? '';
+        final isGroupAssignment = notificationGroups.any((group) {
+          final groupLower = group.toLowerCase();
+          // Check if assignedTo contains group name or vice versa
+          return assignedTo.contains(groupLower) || groupLower.contains(assignedTo);
+        });
+        
+        if (!isGroupAssignment && wasAssigned) {
+          print('🔕 [RealtimeService] Skipping notification: Not a group assignment (groups: $notificationGroups, assignedTo: ${workItem.assignedTo})');
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (e) {
+      print('⚠️ [RealtimeService] Error checking notification settings: $e');
+      // On error, default to sending notification (fail-safe)
+      return true;
+    }
   }
 }
 

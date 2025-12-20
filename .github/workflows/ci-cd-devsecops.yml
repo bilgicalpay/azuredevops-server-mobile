@@ -252,7 +252,7 @@ jobs:
       - name: Sign AAB with Sigstore
         continue-on-error: true
         run: |
-          if command -v cosign &> /dev/null; && [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+          if command -v cosign &> /dev/null && [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
             export COSIGN_EXPERIMENTAL=1
             cosign sign-blob \
               --bundle "build/app/outputs/bundle/release/app-release.aab.sigstore" \

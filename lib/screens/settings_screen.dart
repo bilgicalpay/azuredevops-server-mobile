@@ -24,8 +24,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _wikiUrlController = TextEditingController();
   final _pollingIntervalController = TextEditingController();
   final _marketRepoUrlController = TextEditingController();
+  final _groupController = TextEditingController();
   bool _isLoading = false;
   int _pollingInterval = 15;
+  bool _notifyOnFirstAssignment = true;
+  bool _notifyOnAllUpdates = true;
+  bool _notifyOnHotfixOnly = false;
+  bool _notifyOnGroupAssignments = false;
+  List<String> _notificationGroups = [];
 
   @override
   void initState() {
@@ -38,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _wikiUrlController.dispose();
     _pollingIntervalController.dispose();
     _marketRepoUrlController.dispose();
+    _groupController.dispose();
     super.dispose();
   }
 
@@ -51,9 +58,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     
     // Load polling interval
     final interval = await storage.getPollingInterval();
+    
+    // Load notification settings
+    final notifyOnFirstAssignment = storage.getNotifyOnFirstAssignment();
+    final notifyOnAllUpdates = storage.getNotifyOnAllUpdates();
+    final notifyOnHotfixOnly = storage.getNotifyOnHotfixOnly();
+    final notifyOnGroupAssignments = storage.getNotifyOnGroupAssignments();
+    final notificationGroups = await storage.getNotificationGroups();
+    
     setState(() {
       _pollingInterval = interval;
       _pollingIntervalController.text = interval.toString();
+      _notifyOnFirstAssignment = notifyOnFirstAssignment;
+      _notifyOnAllUpdates = notifyOnAllUpdates;
+      _notifyOnHotfixOnly = notifyOnHotfixOnly;
+      _notifyOnGroupAssignments = notifyOnGroupAssignments;
+      _notificationGroups = notificationGroups;
     });
   }
 
@@ -118,16 +138,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     await storage.setMarketRepoUrl(marketRepoUrl.isEmpty ? null : marketRepoUrl);
     
+    // Bildirim ayarlarını kaydet
+    await storage.setNotifyOnFirstAssignment(_notifyOnFirstAssignment);
+    await storage.setNotifyOnAllUpdates(_notifyOnAllUpdates);
+    await storage.setNotifyOnHotfixOnly(_notifyOnHotfixOnly);
+    await storage.setNotifyOnGroupAssignments(_notifyOnGroupAssignments);
+    await storage.setNotificationGroups(_notificationGroups);
+    
     setState(() => _isLoading = false);
     
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Ayarlar kaydedildi. Uygulama yeniden başlatıldığında geçerli olacaktır.'),
+        content: Text('Ayarlar kaydedildi'),
         backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
+        duration: Duration(seconds: 2),
       ),
     );
+  }
+  
+  void _addGroup() {
+    final groupName = _groupController.text.trim();
+    if (groupName.isNotEmpty && !_notificationGroups.contains(groupName)) {
+      setState(() {
+        _notificationGroups.add(groupName);
+        _groupController.clear();
+      });
+    }
+  }
+  
+  void _removeGroup(String groupName) {
+    setState(() {
+      _notificationGroups.remove(groupName);
+    });
   }
 
   @override
@@ -235,12 +278,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Work item kontrolü için polling interval (saniye). Daha kısa interval daha hızlı bildirim sağlar ancak daha fazla pil tüketir.',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
                     const SizedBox(height: 16),
+                    
+                    // Polling Interval
+                    const Text(
+                      'Kontrol Sıklığı',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: _pollingIntervalController,
                       decoration: const InputDecoration(
@@ -248,7 +293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         hintText: '15',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.timer),
-                        helperText: '5-300 saniye arası (varsayılan: 15)',
+                        helperText: '5-300 saniye arası',
                       ),
                       keyboardType: TextInputType.number,
                     ),
@@ -292,6 +337,99 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
+                    
+                    const Divider(height: 32),
+                    
+                    // Bildirim Türleri
+                    const Text(
+                      'Bildirim Türleri',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    SwitchListTile(
+                      title: const Text('İlk Atamada Bildirim'),
+                      subtitle: const Text('Sadece bana ilk atandığında bildirim gönder'),
+                      value: _notifyOnFirstAssignment,
+                      onChanged: (value) {
+                        setState(() => _notifyOnFirstAssignment = value);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    
+                    SwitchListTile(
+                      title: const Text('Tüm Güncellemelerde Bildirim'),
+                      subtitle: const Text('Bana atanmış work item\'lar güncellendiğinde bildirim gönder'),
+                      value: _notifyOnAllUpdates,
+                      onChanged: (value) {
+                        setState(() => _notifyOnAllUpdates = value);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    
+                    SwitchListTile(
+                      title: const Text('Sadece Hotfix'),
+                      subtitle: const Text('Sadece Hotfix tipindeki work item\'lar için bildirim'),
+                      value: _notifyOnHotfixOnly,
+                      onChanged: (value) {
+                        setState(() => _notifyOnHotfixOnly = value);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    
+                    const Divider(height: 32),
+                    
+                    // Grup Bildirimleri
+                    SwitchListTile(
+                      title: const Text('Grup Atamalarında Bildirim'),
+                      subtitle: const Text('Belirtilen gruplara atama yapıldığında bildirim gönder'),
+                      value: _notifyOnGroupAssignments,
+                      onChanged: (value) {
+                        setState(() => _notifyOnGroupAssignments = value);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    
+                    if (_notifyOnGroupAssignments) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _groupController,
+                              decoration: const InputDecoration(
+                                labelText: 'Grup Adı',
+                                hintText: 'Örn: Developers, QA Team',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.group),
+                              ),
+                              onSubmitted: (_) => _addGroup(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filled(
+                            onPressed: _addGroup,
+                            icon: const Icon(Icons.add),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_notificationGroups.isNotEmpty)
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _notificationGroups.map((group) => Chip(
+                            label: Text(group),
+                            deleteIcon: const Icon(Icons.close, size: 18),
+                            onDeleted: () => _removeGroup(group),
+                          )).toList(),
+                        ),
+                      if (_notificationGroups.isEmpty)
+                        const Text(
+                          'Henüz grup eklenmedi. Yukarıdan grup adı girerek ekleyin.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                        ),
+                    ],
                   ],
                 ),
               ),

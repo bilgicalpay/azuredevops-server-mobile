@@ -286,5 +286,72 @@ class StorageService extends ChangeNotifier {
     await _prefs?.clear();
     notifyListeners();
   }
+
+  // ==================== BİLDİRİM AYARLARI ====================
+  
+  /// Sadece ilk atamada bildirim (varsayılan: true)
+  bool getNotifyOnFirstAssignment() {
+    return _prefs?.getBool('notify_on_first_assignment') ?? true;
+  }
+  
+  Future<void> setNotifyOnFirstAssignment(bool value) async {
+    await _prefs?.setBool('notify_on_first_assignment', value);
+    notifyListeners();
+  }
+  
+  /// Tüm güncellemelerde bildirim (varsayılan: true)
+  bool getNotifyOnAllUpdates() {
+    return _prefs?.getBool('notify_on_all_updates') ?? true;
+  }
+  
+  Future<void> setNotifyOnAllUpdates(bool value) async {
+    await _prefs?.setBool('notify_on_all_updates', value);
+    notifyListeners();
+  }
+  
+  /// Sadece Hotfix tipinde bildirim (varsayılan: false)
+  bool getNotifyOnHotfixOnly() {
+    return _prefs?.getBool('notify_on_hotfix_only') ?? false;
+  }
+  
+  Future<void> setNotifyOnHotfixOnly(bool value) async {
+    await _prefs?.setBool('notify_on_hotfix_only', value);
+    notifyListeners();
+  }
+  
+  /// Grup atamalarında bildirim (varsayılan: false)
+  bool getNotifyOnGroupAssignments() {
+    return _prefs?.getBool('notify_on_group_assignments') ?? false;
+  }
+  
+  Future<void> setNotifyOnGroupAssignments(bool value) async {
+    await _prefs?.setBool('notify_on_group_assignments', value);
+    notifyListeners();
+  }
+  
+  /// Bildirim grupları listesi
+  Future<List<String>> getNotificationGroups() async {
+    try {
+      final groupsJson = _prefs?.getString('notification_groups');
+      if (groupsJson == null || groupsJson.isEmpty) {
+        return [];
+      }
+      final List<dynamic> groups = jsonDecode(groupsJson);
+      return groups.cast<String>();
+    } catch (e) {
+      print('Error reading notification groups: $e');
+      return [];
+    }
+  }
+  
+  /// Tüm bildirim gruplarını ayarla
+  Future<void> setNotificationGroups(List<String> groups) async {
+    try {
+      await _prefs?.setString('notification_groups', jsonEncode(groups));
+      notifyListeners();
+    } catch (e) {
+      print('Error setting notification groups: $e');
+    }
+  }
 }
 

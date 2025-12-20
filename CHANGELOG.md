@@ -2,6 +2,26 @@
 
 Bu proje [Semantic Versioning](https://semver.org/) kullanmaktadır.
 
+## [1.1.2] - 2024-12-20
+
+### 🔧 İyileştirmeler
+
+#### Bildirim Ayarları Entegrasyonu
+- Bildirim ayarları artık background task service ve realtime service'de aktif olarak kullanılıyor
+- **İlk Atamada Bildirim** ayarı background servislerde uygulanıyor
+- **Tüm Güncellemelerde Bildirim** ayarı background servislerde uygulanıyor
+- **Sadece Hotfix** filtresi background servislerde uygulanıyor
+- **Grup Bildirimleri** ayarı background servislerde uygulanıyor
+- Tüm bildirim filtreleri hem uygulama açıkken hem de arka planda çalışırken aktif
+
+### 🐛 Hata Düzeltmeleri
+
+#### Settings Screen
+- Bildirim ayarları için eksik değişken tanımlamaları düzeltildi
+- Bildirim ayarları artık doğru şekilde yükleniyor ve kaydediliyor
+
+---
+
 ## [1.1.0] - 2024-12-20
 
 ### 🆕 Yeni Özellikler

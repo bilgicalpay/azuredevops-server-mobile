@@ -15,6 +15,7 @@ import 'package:html/parser.dart' as html_parser;
 import 'work_item_service.dart' show WorkItemService, WorkItem;
 import 'notification_service.dart';
 import 'market_service.dart';
+import 'storage_service.dart';
 
 /// Arka plan görev servisi sınıfı
 /// Uygulama kapalıyken bile periyodik kontroller yapar
@@ -27,6 +28,7 @@ class BackgroundTaskService {
   bool _isRunning = false;
   final WorkItemService _workItemService = WorkItemService();
   final NotificationService _notificationService = NotificationService();
+  StorageService? _storageService;
   final Map<int, int> _workItemRevisions = {};
   final Map<int, String?> _workItemAssignees = {}; // Track assignees to detect assignee changes
   final Map<int, DateTime?> _workItemChangedDates = {}; // Track changed dates for better change detection
@@ -38,7 +40,9 @@ class BackgroundTaskService {
 
   /// Initialize the service (called on app start)
   Future<void> init() async {
-    // This method exists for consistency with other services
+    // Initialize storage service
+    _storageService = StorageService();
+    await _storageService!.init();
     // Actual initialization happens in initializeTracking()
   }
 
@@ -152,6 +156,12 @@ class BackgroundTaskService {
             }
           }
           
+          // Bildirim ayarlarını kontrol et
+          if (!await _shouldNotifyForWorkItem(workItem, isNew: true, wasAssigned: true)) {
+            print('🔕 [BackgroundTaskService] Notification skipped for work item #${workItem.id} based on settings');
+            continue;
+          }
+          
           // Yeni work item veya değişiklik var - bildirim gönder
           print('🆕 [BackgroundTaskService] New work item detected: #${workItem.id} - ${workItem.title}');
           await _notificationService.showWorkItemNotification(
@@ -213,6 +223,23 @@ class BackgroundTaskService {
           }
           
           if (shouldNotify) {
+            // Bildirim ayarlarını kontrol et
+            final wasAssigned = knownAssignee == null && currentAssignee != null;
+            if (!await _shouldNotifyForWorkItem(workItem, isNew: false, wasAssigned: wasAssigned)) {
+              print('🔕 [BackgroundTaskService] Notification skipped for work item #${workItem.id} based on settings');
+              // Update tracking even if notification skipped
+              if (knownRev == null) {
+                _workItemRevisions[workItem.id] = currentRev;
+              }
+              if (knownAssignee == null) {
+                _workItemAssignees[workItem.id] = currentAssignee;
+              }
+              if (knownChangedDate == null && currentChangedDate != null) {
+                _workItemChangedDates[workItem.id] = currentChangedDate;
+              }
+              continue;
+            }
+            
             await _notificationService.showWorkItemNotification(
               workItemId: workItem.id,
               title: workItem.title,
@@ -578,6 +605,67 @@ class BackgroundTaskService {
     }
     
     return artifacts;
+  }
+  
+  /// Check if notification should be sent based on user settings
+  Future<bool> _shouldNotifyForWorkItem(WorkItem workItem, {required bool isNew, required bool wasAssigned}) async {
+    try {
+      // Initialize storage service if not already done
+      if (_storageService == null) {
+        _storageService = StorageService();
+        await _storageService!.init();
+      }
+      
+      // Get notification settings
+      final notifyOnFirstAssignment = _storageService!.getNotifyOnFirstAssignment();
+      final notifyOnAllUpdates = _storageService!.getNotifyOnAllUpdates();
+      final notifyOnHotfixOnly = _storageService!.getNotifyOnHotfixOnly();
+      final notifyOnGroupAssignments = _storageService!.getNotifyOnGroupAssignments();
+      final notificationGroups = await _storageService!.getNotificationGroups();
+      
+      // Sadece Hotfix filtresi
+      if (notifyOnHotfixOnly && workItem.type.toLowerCase() != 'hotfix') {
+        print('🔕 [BackgroundTaskService] Skipping notification: Only Hotfix allowed, but type is ${workItem.type}');
+        return false;
+      }
+      
+      // İlk atamada bildirim kontrolü
+      if (isNew && wasAssigned) {
+        if (!notifyOnFirstAssignment) {
+          print('🔕 [BackgroundTaskService] Skipping notification: First assignment notifications disabled');
+          return false;
+        }
+      }
+      
+      // Tüm güncellemelerde bildirim kontrolü
+      if (!isNew && !wasAssigned) {
+        if (!notifyOnAllUpdates) {
+          print('🔕 [BackgroundTaskService] Skipping notification: All updates notifications disabled');
+          return false;
+        }
+      }
+      
+      // Grup atamalarında bildirim kontrolü
+      if (notifyOnGroupAssignments && notificationGroups.isNotEmpty) {
+        final assignedTo = workItem.assignedTo?.toLowerCase() ?? '';
+        final isGroupAssignment = notificationGroups.any((group) {
+          final groupLower = group.toLowerCase();
+          // Check if assignedTo contains group name or vice versa
+          return assignedTo.contains(groupLower) || groupLower.contains(assignedTo);
+        });
+        
+        if (!isGroupAssignment && wasAssigned) {
+          print('🔕 [BackgroundTaskService] Skipping notification: Not a group assignment (groups: $notificationGroups, assignedTo: ${workItem.assignedTo})');
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (e) {
+      print('⚠️ [BackgroundTaskService] Error checking notification settings: $e');
+      // On error, default to sending notification (fail-safe)
+      return true;
+    }
   }
 }
 

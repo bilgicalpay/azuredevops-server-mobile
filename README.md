@@ -14,6 +14,12 @@ Bu uygulama, Azure DevOps Server 2022 on-premise kurulumları için mobil erişi
 - ✅ Query çalıştırma ve sonuç görüntüleme
 - ✅ Wiki içerik görüntüleme
 - ✅ Push notification desteği
+- ✅ **Bildirim Ayarları Özelleştirmesi:**
+  - İlk atamada bildirim (sadece size ilk atandığında)
+  - Tüm güncellemelerde bildirim (atanmış work item'lar güncellendiğinde)
+  - Sadece Hotfix filtresi (yalnızca Hotfix tipindeki work item'lar için)
+  - Grup bildirimleri (belirtilen gruplara atama yapıldığında)
+  - Tüm ayarlar background servislerde aktif olarak çalışır
 - ✅ Personal Access Token (PAT) kimlik doğrulama
 - ✅ Active Directory (AD) kimlik doğrulama
 - ✅ MDM entegrasyonu
@@ -211,4 +217,5 @@ Bu uygulama kurumsal kullanım için geliştirilmiştir.
 ---
 
 **Geliştirici:** Alpay Bilgiç  
-**Son Güncelleme:** 2025 17 Aralık
+**Son Güncelleme:** 2024 20 Aralık  
+**Versiyon:** 1.1.2

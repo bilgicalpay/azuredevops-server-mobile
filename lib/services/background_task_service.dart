@@ -37,6 +37,7 @@ class BackgroundTaskService {
   
   // SharedPreferences key for persistent notified work item IDs
   static const String _notifiedIdsKey = 'notified_work_item_ids';
+  static const String _firstAssignmentNotifiedIdsKey = 'first_assignment_notified_work_item_ids';
 
   /// Initialize the service (called on app start)
   Future<void> init() async {
@@ -144,6 +145,18 @@ class BackgroundTaskService {
           _workItemAssignees[workItem.id] = currentAssignee;
           _workItemChangedDates[workItem.id] = currentChangedDate;
           
+          // ÖNEMLİ: Eğer bu work item "ilk atamada bildirim" ile işaretlenmişse ve sadece "ilk atamada bildirim" aktifse,
+          // bir daha asla bildirim gönderme
+          if (await _isFirstAssignmentNotified(workItem.id)) {
+            final notifyOnFirstAssignment = _storageService!.getNotifyOnFirstAssignment();
+            final notifyOnAllUpdates = _storageService!.getNotifyOnAllUpdates();
+            
+            if (notifyOnFirstAssignment && !notifyOnAllUpdates) {
+              print('🔒 [BackgroundTaskService] Work item #${workItem.id} was first-assignment-notified, skipping all future notifications');
+              continue;
+            }
+          }
+          
           // ÖNEMLİ: Bu work item için daha önce bildirim gönderilmiş mi kontrol et
           // Uygulama yeniden kurulsa bile bu bilgi kalıcı olarak saklanır
           if (_wasNotified(workItem.id)) {
@@ -157,7 +170,8 @@ class BackgroundTaskService {
           }
           
           // Bildirim ayarlarını kontrol et
-          if (!await _shouldNotifyForWorkItem(workItem, isNew: true, wasAssigned: true)) {
+          final shouldNotify = await _shouldNotifyForWorkItem(workItem, isNew: true, wasAssigned: true);
+          if (!shouldNotify) {
             print('🔕 [BackgroundTaskService] Notification skipped for work item #${workItem.id} based on settings');
             continue;
           }
@@ -169,6 +183,19 @@ class BackgroundTaskService {
             title: workItem.title,
             body: 'Size yeni bir work item atandı: ${workItem.type}',
           );
+          
+          // ÖNEMLİ: Eğer sadece "ilk atamada bildirim" aktifse (ve "tüm güncellemelerde bildirim" aktif değilse),
+          // bu work item için bir daha ASLA bildirim gönderme (uygulama kaldırılıp tekrar kurulsa bile)
+          final notifyOnFirstAssignment = _storageService!.getNotifyOnFirstAssignment();
+          final notifyOnAllUpdates = _storageService!.getNotifyOnAllUpdates();
+          
+          if (notifyOnFirstAssignment && !notifyOnAllUpdates) {
+            // Sadece ilk atamada bildirim aktifse, bu work item'ı "first_assignment_notified" olarak işaretle
+            // Bu sayede bir daha asla bildirim gönderilmeyecek
+            await _markAsFirstAssignmentNotified(workItem.id);
+            print('🔒 [BackgroundTaskService] Work item #${workItem.id} marked as first-assignment-notified (no more notifications)');
+          }
+          
           await _markAsNotified(workItem.id); // Kalıcı olarak kaydet
           await _saveLastNotifiedRevision(workItem.id, currentRev);
           print('✅ [BackgroundTaskService] Notification sent for work item #${workItem.id}');
@@ -223,6 +250,28 @@ class BackgroundTaskService {
           }
           
           if (shouldNotify) {
+            // ÖNEMLİ: Eğer bu work item "ilk atamada bildirim" ile işaretlenmişse ve sadece "ilk atamada bildirim" aktifse,
+            // bir daha asla bildirim gönderme
+            if (await _isFirstAssignmentNotified(workItem.id)) {
+              final notifyOnFirstAssignment = _storageService!.getNotifyOnFirstAssignment();
+              final notifyOnAllUpdates = _storageService!.getNotifyOnAllUpdates();
+              
+              if (notifyOnFirstAssignment && !notifyOnAllUpdates) {
+                print('🔒 [BackgroundTaskService] Work item #${workItem.id} was first-assignment-notified, skipping all future notifications');
+                // Update tracking even if notification skipped
+                if (knownRev == null) {
+                  _workItemRevisions[workItem.id] = currentRev;
+                }
+                if (knownAssignee == null) {
+                  _workItemAssignees[workItem.id] = currentAssignee;
+                }
+                if (knownChangedDate == null && currentChangedDate != null) {
+                  _workItemChangedDates[workItem.id] = currentChangedDate;
+                }
+                continue;
+              }
+            }
+            
             // Bildirim ayarlarını kontrol et
             final wasAssigned = knownAssignee == null && currentAssignee != null;
             if (!await _shouldNotifyForWorkItem(workItem, isNew: false, wasAssigned: wasAssigned)) {
@@ -336,6 +385,45 @@ class BackgroundTaskService {
   /// Check if work item was already notified
   bool _wasNotified(int workItemId) {
     return _notifiedWorkItemIds.contains(workItemId);
+  }
+  
+  /// Mark work item as first-assignment-notified (permanent, even after app reinstall)
+  Future<void> _markAsFirstAssignmentNotified(int workItemId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final idsJson = prefs.getString(_firstAssignmentNotifiedIdsKey);
+      Set<int> firstAssignmentNotifiedIds = {};
+      
+      if (idsJson != null && idsJson.isNotEmpty) {
+        final List<dynamic> ids = jsonDecode(idsJson);
+        firstAssignmentNotifiedIds = ids.map((e) => e as int).toSet();
+      }
+      
+      firstAssignmentNotifiedIds.add(workItemId);
+      await prefs.setString(_firstAssignmentNotifiedIdsKey, jsonEncode(firstAssignmentNotifiedIds.toList()));
+      print('🔒 [BackgroundTaskService] Work item #$workItemId marked as first-assignment-notified (permanent)');
+    } catch (e) {
+      print('⚠️ [BackgroundTaskService] Error marking first-assignment-notified: $e');
+    }
+  }
+  
+  /// Check if work item was first-assignment-notified (permanent check)
+  Future<bool> _isFirstAssignmentNotified(int workItemId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final idsJson = prefs.getString(_firstAssignmentNotifiedIdsKey);
+      
+      if (idsJson == null || idsJson.isEmpty) {
+        return false;
+      }
+      
+      final List<dynamic> ids = jsonDecode(idsJson);
+      final firstAssignmentNotifiedIds = ids.map((e) => e as int).toSet();
+      return firstAssignmentNotifiedIds.contains(workItemId);
+    } catch (e) {
+      print('⚠️ [BackgroundTaskService] Error checking first-assignment-notified: $e');
+      return false;
+    }
   }
 
   /// Reset tracking data

@@ -688,14 +688,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          final url = Uri.parse('https://buymeacoffee.com/bilgicalpay');
-                          if (await canLaunchUrl(url)) {
-                            await launchUrl(url, mode: LaunchMode.externalApplication);
-                          } else {
+                          try {
+                            final url = Uri.parse('https://buymeacoffee.com/bilgicalpay');
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(
+                                url,
+                                mode: LaunchMode.externalBrowser,
+                              );
+                            } else {
+                              // Fallback: try without canLaunchUrl check
+                              await launchUrl(
+                                url,
+                                mode: LaunchMode.externalBrowser,
+                              );
+                            }
+                          } catch (e) {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Could not open ${url.toString()}'),
+                                  content: Text('Could not open link: $e'),
+                                  duration: const Duration(seconds: 3),
                                 ),
                               );
                             }

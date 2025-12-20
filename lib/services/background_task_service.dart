@@ -787,6 +787,13 @@ class BackgroundTaskService {
         }
       }
       
+      // Eğer sadece "ilk atamada bildirim" aktifse ve bu bir güncelleme ise, bildirim gönderme
+      if (notifyOnFirstAssignment && !notifyOnAllUpdates && !isNew) {
+        print('🔕 [BackgroundTaskService] Skipping notification: First assignment only mode, this is an update');
+        return false;
+      }
+      
+      // Default: bildirim gönder (sadece yukarıdaki kontrollerden geçtiyse)
       return true;
     } catch (e) {
       print('⚠️ [BackgroundTaskService] Error checking notification settings: $e');

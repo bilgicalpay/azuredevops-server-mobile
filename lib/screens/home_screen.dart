@@ -46,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
   String? _wikiContent;
   bool _isLoadingWiki = false;
+  String _appVersion = '';
   bool _showCulturePopup = false;
   Map<String, String>? _cultureInfo;
 
@@ -53,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadAppVersion();
     _loadWorkItems();
     _loadWikiContent();
     _startRealtimeService();
@@ -65,6 +67,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _updateActivity() {
     final storage = Provider.of<StorageService>(context, listen: false);
     AutoLogoutService.updateActivity(storage);
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = 'v${packageInfo.version}+${packageInfo.buildNumber}';
+    });
   }
 
   Future<void> _initializeBackgroundService() async {

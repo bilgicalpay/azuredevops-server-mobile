@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 
 /// Giriş ekranı widget'ı
 /// Kullanıcı kimlik doğrulama işlemlerini yönetir
@@ -29,6 +30,36 @@ class _LoginScreenState extends State<LoginScreen> {
   
   bool _isTokenAuth = true;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // İlk açılışta demo ayarlarını yükle
+    _loadDemoSettings();
+  }
+
+  Future<void> _loadDemoSettings() async {
+    final storage = Provider.of<StorageService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
+    // Demo için default değerler
+    const String defaultServerUrl = 'https://devops.higgscloud.com/Dev';
+    const String defaultToken = 's6znafrrzv35ns24nxpzayw7dt2ro2zn6yaoyp5f7mls23ceq5dq';
+    
+    // Eğer storage'da server URL veya token yoksa, default değerleri yükle
+    final currentServerUrl = authService.serverUrl;
+    final currentToken = await storage.getToken();
+    
+    if (currentServerUrl == null || currentToken == null) {
+      // Default değerleri controller'lara yükle (kullanıcı görebilir ve değiştirebilir)
+      _serverUrlController.text = defaultServerUrl;
+      _tokenController.text = defaultToken;
+    } else {
+      // Mevcut değerleri yükle
+      _serverUrlController.text = currentServerUrl;
+      _tokenController.text = currentToken;
+    }
+  }
 
   @override
   void dispose() {

@@ -1,3 +1,46 @@
+# Release Notes - v1.2.0 (Build 72)
+
+**Release Date:** 21-12-2025  
+**Package Name:** io.rdc.azuredevops  
+**Developer:** Alpay Bilgiç (bilgicalpay@gmail.com)
+
+## 📦 Build Files
+
+- **Android APK:** azuredevops-1.2.0.apk
+- **iOS IPA:** azuredevops-1.2.0.ipa
+
+## 🚀 Deployment Status
+
+- ✅ **Android:** Ready for deployment
+- ✅ **iOS:** Ready for deployment
+
+## ✨ New Features & Improvements
+
+### Türkiye Gezi Rehberi İyileştirmeleri 🆕
+- **Iframe Entegrasyonu:** Türkiye gezi rehberi artık iframe olarak gösteriliyor
+- **WebView Desteği:** webview_flutter paketi ile tam ekran gezi rehberi deneyimi
+- **JavaScript Desteği:** WebView'de JavaScript aktif
+- **Loading Indicator:** Sayfa yüklenirken loading göstergesi
+
+### Popup Bilgileri Dil Desteği İyileştirmeleri 🆕
+- **Tüm Diller İçin İçerik:** Tüm desteklenen diller için popup içerikleri düzeltildi
+- **Generic İçerikler Kaldırıldı:** Sadece gerçek lokalize içerik gösteriliyor
+- **Başlık Lokalizasyonu:** Popup başlıkları tüm dillerde doğru şekilde gösteriliyor
+- **Proper Noun Koruması:** Özel isimler Türkçe olarak korunuyor
+
+### Boolean Custom Field İyileştirmeleri 🆕
+- **Switch/Toggle Widget:** Boolean field'lar artık SwitchListTile (toggle/switch) olarak gösteriliyor
+- **Text Field Filtreleme:** Boolean field'lar text field listesinden çıkarıldı
+- **Azure Web Uyumluluğu:** Azure web arayüzündeki görünüme benzer şekilde çalışıyor
+
+## 🐛 Bug Fixes
+
+### UI İyileştirmeleri
+- ✅ **Versiyon Bilgileri Kaldırıldı:** Azure DevOps logosu altından ve AppBar'dan versiyon bilgileri kaldırıldı
+- ✅ **Gereksiz Bağımlılıklar:** package_info_plus bağımlılığı home_screen.dart'tan kaldırıldı
+
+---
+
 # Release Notes - v1.1.4 (Build 43)
 
 **Release Date:** 21-12-2025  

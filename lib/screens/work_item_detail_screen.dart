@@ -13,7 +13,6 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:io';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/work_item_service.dart';
@@ -242,8 +241,8 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
               text: currentValue,
             );
           }
-        // Regular text/number field
-        else if (fieldValue is String || fieldValue is num || fieldValue == null) {
+        // Regular text/number field (but not boolean)
+        else if ((fieldValue is String || fieldValue is num || fieldValue == null) && fieldType != 'boolean') {
           _fieldControllers[fieldKey] = TextEditingController(
             text: currentValue,
           );
@@ -987,15 +986,15 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
                                   final allowedValues = fieldDef?.allowedValues ?? [];
                                   final fieldType = (fieldDef?.type ?? '').toLowerCase();
                                   
-                                  // Check if it's a boolean field (tickbox)
+                                  // Check if it's a boolean field (toggle/switch)
                                   if (fieldType == 'boolean') {
                                     final boolValue = entry.value == 'true';
-                                    return CheckboxListTile(
+                                    return SwitchListTile(
                                       title: Text(fieldDef?.name ?? entry.key),
                                       value: boolValue,
                                       onChanged: (value) {
                                         setState(() {
-                                          _comboBoxValues[entry.key] = (value ?? false).toString();
+                                          _comboBoxValues[entry.key] = value.toString();
                                         });
                                       },
                                     );
@@ -1089,8 +1088,13 @@ class _WorkItemDetailScreenState extends State<WorkItemDetailScreen> {
                                     ),
                                   );
                                 }),
-                                // Text fields (including textarea/html fields)
-                                ..._fieldControllers.entries.map((entry) {
+                                // Text fields (including textarea/html fields) - exclude boolean fields
+                                ..._fieldControllers.entries.where((entry) {
+                                  final fieldDef = _fieldDefinitions[entry.key];
+                                  final fieldType = (fieldDef?.type ?? '').toLowerCase();
+                                  // Exclude boolean fields from text fields
+                                  return fieldType != 'boolean';
+                                }).map((entry) {
                                   final fieldDef = _fieldDefinitions[entry.key];
                                   final fieldType = (fieldDef?.type ?? '').toLowerCase();
                                   

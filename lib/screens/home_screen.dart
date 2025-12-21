@@ -9,7 +9,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import 'package:package_info_plus/package_info_plus.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/work_item_service.dart';
@@ -24,8 +23,10 @@ import 'settings_screen.dart';
 import 'wiki_viewer_screen.dart';
 import 'documents_screen.dart';
 import 'market_screen.dart';
+import 'turkey_guide_screen.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../services/turkish_culture_service.dart';
+import '../l10n/app_localizations.dart';
 
 /// Ana ekran widget'ı
 /// Work item listesi ve wiki içeriğini gösterir
@@ -43,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
   String? _wikiContent;
   bool _isLoadingWiki = false;
-  String _appVersion = '';
   bool _showCulturePopup = false;
   Map<String, String>? _cultureInfo;
 
@@ -51,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadAppVersion();
     _loadWorkItems();
     _loadWikiContent();
     _startRealtimeService();
@@ -64,13 +63,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _updateActivity() {
     final storage = Provider.of<StorageService>(context, listen: false);
     AutoLogoutService.updateActivity(storage);
-  }
-
-  Future<void> _loadAppVersion() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    setState(() {
-      _appVersion = 'v${packageInfo.version}+${packageInfo.buildNumber}';
-    });
   }
 
   Future<void> _initializeBackgroundService() async {
@@ -92,8 +84,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final storage = Provider.of<StorageService>(context, listen: false);
     
     if (state == AppLifecycleState.resumed) {
       // App came to foreground - refresh data and restart services
@@ -257,155 +247,198 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Üst satır: Logo, AzureDevOps yazısı ve versiyon
+              // Üst satır: Sol tarafta Logo + AzureDevOps, Sağ tarafta Vakıf Katılım
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    height: 28,
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'AzureDevOps',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (_appVersion.isNotEmpty)
-                        Text(
-                          _appVersion,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade600,
+                  // Sol taraf: Logo + AzureDevOps
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 28,
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const SizedBox.shrink();
+                            },
                           ),
                         ),
-                    ],
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'AzureDevOps',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Sağ taraf: Vakıf Katılım - tam sağa dayalı
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Logo - önce logo, sonra yazı
+                        SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: Image.asset(
+                            'assets/images/vakif_katilim.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Logo yoksa küçük bir placeholder ikon göster
+                              return Icon(
+                                Icons.account_balance,
+                                size: 20,
+                                color: Colors.blue.shade900,
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Vakıf Katılım',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade900,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              // Alt satır: Menüler
+              // Alt satır: Menüler - ScrollableRow ile overflow önleniyor
               Container(
                 margin: const EdgeInsets.only(top: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                  IconButton(
-                    icon: const Icon(Icons.query_stats),
-                    color: Colors.blue.shade900,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const QueriesScreen(),
-                        ),
-                      );
-                    },
-                    tooltip: 'My Queries',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.description),
-                    color: Colors.blue.shade900,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DocumentsScreen(),
-                        ),
-                      );
-                    },
-                    tooltip: 'Belgeler',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.store),
-                    color: Colors.blue.shade900,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MarketScreen(),
-                        ),
-                      );
-                    },
-                    tooltip: 'Market',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings),
-                    color: Colors.blue.shade900,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SettingsScreen(),
-                        ),
-                      ).then((_) async {
-                        // Reload wiki content when returning from settings
-                        _loadWikiContent();
-                        // Restart realtime service with new polling interval if changed
-                        final authService = Provider.of<AuthService>(context, listen: false);
-                        final storage = Provider.of<StorageService>(context, listen: false);
-                        await RealtimeService().restartPolling(authService, storage);
-                        // Restart background service
-                        BackgroundTaskService().stop();
-                        await BackgroundTaskService().start();
-                        // Restart background worker service with new interval
-                        await BackgroundWorkerService.stop();
-                        await BackgroundWorkerService.start();
-                      });
-                    },
-                    tooltip: 'Ayarlar',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    color: Colors.blue.shade900,
-                    onPressed: () {
-                      _loadWorkItems();
-                      _loadWikiContent();
-                    },
-                    tooltip: 'Yenile',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.logout),
-                    color: Colors.blue.shade900,
-                    onPressed: () async {
-                      await authService.logout();
-                    },
-                    tooltip: 'Çıkış',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        ),
-        actions: [
-          // Versiyon bilgisi en sağda, üstte
-          if (_appVersion.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0, top: 8.0),
-              child: Center(
-                child: Text(
-                  _appVersion,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.normal,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.query_stats),
+                        color: Colors.blue.shade900,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const QueriesScreen(),
+                            ),
+                          );
+                        },
+                        tooltip: 'My Queries',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.description),
+                        color: Colors.blue.shade900,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DocumentsScreen(),
+                            ),
+                          );
+                        },
+                        tooltip: 'Belgeler',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.store),
+                        color: Colors.blue.shade900,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MarketScreen(),
+                            ),
+                          );
+                        },
+                        tooltip: 'Market',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.settings),
+                        color: Colors.blue.shade900,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingsScreen(),
+                            ),
+                          ).then((_) async {
+                            // Reload wiki content when returning from settings
+                            _loadWikiContent();
+                            // Restart realtime service with new polling interval if changed
+                            final authService = Provider.of<AuthService>(context, listen: false);
+                            final storage = Provider.of<StorageService>(context, listen: false);
+                            await RealtimeService().restartPolling(authService, storage);
+                            // Restart background service
+                            BackgroundTaskService().stop();
+                            await BackgroundTaskService().start();
+                            // Restart background worker service with new interval
+                            await BackgroundWorkerService.stop();
+                            await BackgroundWorkerService.start();
+                          });
+                        },
+                        tooltip: 'Ayarlar',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.flag),
+                        color: Colors.red.shade700,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const TurkeyGuideScreen(),
+                            ),
+                          );
+                        },
+                        tooltip: 'Türkiye Rehberi',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        color: Colors.blue.shade900,
+                        onPressed: () {
+                          _loadWorkItems();
+                          _loadWikiContent();
+                        },
+                        tooltip: 'Yenile',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.logout),
+                        color: Colors.blue.shade900,
+                        onPressed: () async {
+                          await authService.logout();
+                        },
+                        tooltip: 'Çıkış',
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-        ],
+            ],
+          ),
+        ),
+        actions: const [],
         centerTitle: false,
         automaticallyImplyLeading: false,
           ),
@@ -589,21 +622,43 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   /// Show Turkish culture popup
   void _showTurkishCulturePopup() {
-    final info = TurkishCultureService.getRandomInfo();
-    // Ensure content is max 250 characters
-    String content = info['content']!;
-    if (content.length > 250) {
-      content = content.substring(0, 247) + '...';
+    try {
+      final info = TurkishCultureService.getRandomInfo(context);
+      if (info == null) {
+        print('⚠️ [HomeScreen] Turkish culture info is null');
+        return;
+      }
+      
+      print('✅ [HomeScreen] Turkish culture info received: ${info['title']}');
+      
+      // Get content from info
+      String content = info['content'] ?? '';
+      
+      // If content is empty or null, don't show popup
+      if (content.isEmpty) {
+        print('⚠️ [HomeScreen] Content is empty, skipping popup');
+        return;
+      }
+      
+      // Truncate content to max 250 characters if needed
+      if (content.length > 250) {
+        content = content.substring(0, 247) + '...';
+      }
+      
+      setState(() {
+        _cultureInfo = {
+          'title': info['title'] ?? 'Türk Kültürü',
+          'content': content,
+          'type': info['type'] ?? '',
+        };
+        _showCulturePopup = true;
+      });
+      
+      print('✅ [HomeScreen] Popup state set: _showCulturePopup=$_showCulturePopup, _cultureInfo=${_cultureInfo != null}');
+    } catch (e, stackTrace) {
+      print('❌ [HomeScreen] Error showing Turkish culture popup: $e');
+      print('Stack trace: $stackTrace');
     }
-    
-    setState(() {
-      _cultureInfo = {
-        'title': info['title']!,
-        'content': content,
-        'type': info['type']!,
-      };
-      _showCulturePopup = true;
-    });
   }
 
   /// Build Turkish culture popup widget
@@ -631,6 +686,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,
                         ),
+                        // Ensure proper encoding for Turkish and other special characters
+                        textDirection: TextDirection.ltr,
                       ),
                     ),
                     IconButton(
@@ -665,7 +722,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         _cultureInfo = null;
                       });
                     },
-                    child: const Text('Kapat'),
+                    child: Text(AppLocalizations.of(context)?.close ?? 'Kapat'),
                   ),
                 ),
               ],

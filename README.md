@@ -1,7 +1,7 @@
 # Azure DevOps Server 2022 Mobile App
 
 **Geliştirici:** Alpay Bilgiç  
-**Versiyon:** 1.2.0+45  
+**Versiyon:** 1.2.0+72  
 **Tarih:** 21-12-2025
 
 ## 📱 Genel Bakış
@@ -13,6 +13,7 @@ Bu uygulama, Azure DevOps Server 2022 on-premise kurulumları için mobil erişi
 ### Work Item Yönetimi
 - ✅ Work Item görüntüleme ve yönetimi
 - ✅ Custom field düzenleme (selectbox, combobox, tickbox desteği)
+- ✅ Boolean field'lar Switch/Toggle olarak gösteriliyor (Azure web arayüzüne benzer)
 - ✅ Gizli field'lar otomatik filtrelenir
 - ✅ Discussion/Comments özelliği (yorum ekleme ve görüntüleme)
 - ✅ Work Item Attachments (dosya ekleme ve görüntüleme)
@@ -66,6 +67,12 @@ Bu uygulama, Azure DevOps Server 2022 on-premise kurulumları için mobil erişi
   - 50+ Türk tarihi figürü (bilim, sanat, edebiyat)
   - 12 tarihi Türk devleti
   - 15 modern Türk cumhuriyeti ve aktif Türk devleti
+  - Tüm diller için lokalize içerik (Türkçe, İngilizce, Rusça, Hintçe, Hollandaca, Almanca, Fransızca, Urduca, Uygurca, Azerbaycan Türkçesi, Kırgızca, Japonca)
+  - Generic içerikler kaldırıldı (sadece gerçek lokalize içerik gösteriliyor)
+- ✅ Türkiye Gezi Rehberi (iframe olarak web sitesi entegrasyonu)
+  - https://www.bizevdeyokuz.com/en/category/europe/turkey/ adresi iframe olarak gösteriliyor
+  - WebView ile tam ekran gezi rehberi deneyimi
+  - JavaScript desteği aktif
 
 ### Güvenlik
 - ✅ Certificate Pinning (SHA-256)

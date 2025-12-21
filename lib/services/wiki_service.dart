@@ -58,7 +58,7 @@ class WikiService {
           
           if (finalCollection.isNotEmpty && project.isNotEmpty && wikiParts.length >= 2) {
             final wikiName = wikiParts[0];
-            final version = wikiParts[1];
+            // final version = wikiParts[1]; // Version not used in API call
             final pagePath = wikiParts.length > 2 ? wikiParts.sublist(2).join('/') : '';
             
             // Try multiple wiki API endpoints
@@ -75,33 +75,81 @@ class WikiService {
           }
         }
       }
+      // Try multiple endpoints and headers
+      List<Map<String, String>> attempts = [];
+      
       // If it's a git repo URL, convert to API endpoint
-      else if (uri.path.contains('/_git/') && uri.queryParameters.containsKey('path')) {
+      // Format: https://devops.higgscloud.com/Dev/_git/demo?path=/README.md
+      if (uri.path.contains('/_git/') && uri.queryParameters.containsKey('path')) {
         final path = uri.queryParameters['path'] ?? '';
+        debugPrint('🔍 [WIKI] Git repo URL detected, path: $path');
+        
+        // Extract project/repo name from path: /Dev/_git/demo -> demo
         final projectMatch = RegExp(r'/_git/([^/?]+)').firstMatch(uri.path);
         if (projectMatch != null) {
           final project = projectMatch.group(1);
-          // Extract collection from path (first segment after host)
+          debugPrint('🔍 [WIKI] Extracted project: $project');
+          
+          // Extract collection from path segments
+          // URL: /Dev/_git/demo -> segments: ['Dev', '_git', 'demo']
+          // Collection is the first segment before '_git'
           String collectionPath = '';
-          if (uri.pathSegments.isNotEmpty && uri.pathSegments[0] != '_git') {
-            collectionPath = uri.pathSegments[0];
+          final pathSegments = uri.pathSegments;
+          for (int i = 0; i < pathSegments.length; i++) {
+            if (pathSegments[i] == '_git' && i > 0) {
+              collectionPath = pathSegments[i - 1];
+              break;
+            }
           }
           
-          // Use provided collection if available
-          final finalCollection = collectionPath.isNotEmpty ? collectionPath : (collection ?? '');
+          // If not found, try first segment
+          if (collectionPath.isEmpty && pathSegments.isNotEmpty && pathSegments[0] != '_git') {
+            collectionPath = pathSegments[0];
+          }
+          
+          debugPrint('🔍 [WIKI] Extracted collection: $collectionPath');
+          
+          // Use provided collection if available, otherwise use extracted
+          final finalCollection = (collection != null && collection.isNotEmpty) ? collection : collectionPath;
+          
+          // Normalize path (remove leading slash if present, then add it back for API)
+          String normalizedPath = path.startsWith('/') ? path : '/$path';
           
           // Try multiple API endpoint formats
           if (finalCollection.isNotEmpty) {
-            apiUrl = '${uri.scheme}://${uri.host}/$finalCollection/$project/_apis/git/repositories/$project/items?path=${Uri.encodeComponent(path)}&includeContent=true&api-version=7.0';
+            // Format 1: {server}/{collection}/{project}/_apis/git/repositories/{repoName}/items?path={path}&includeContent=true&api-version=7.0
+            apiUrl = '${uri.scheme}://${uri.host}/$finalCollection/$project/_apis/git/repositories/$project/items?path=${Uri.encodeComponent(normalizedPath)}&includeContent=true&api-version=7.0';
+            debugPrint('🔄 [WIKI] Converted git URL to API (with collection): $apiUrl');
+            
+            // Format 2: Try with collection at root level
+            attempts.add({
+              'url': '${uri.scheme}://${uri.host}/$finalCollection/_apis/git/repositories/$project/items?path=${Uri.encodeComponent(normalizedPath)}&includeContent=true&api-version=7.0',
+              'accept': 'application/json',
+            });
+            
+            // Format 3: Try with DefaultCollection (common in Azure DevOps Server)
+            attempts.add({
+              'url': '${uri.scheme}://${uri.host}/DefaultCollection/$project/_apis/git/repositories/$project/items?path=${Uri.encodeComponent(normalizedPath)}&includeContent=true&api-version=7.0',
+              'accept': 'application/json',
+            });
+            
+            // Format 4: Try without collection in path
+            attempts.add({
+              'url': '${uri.scheme}://${uri.host}/$project/_apis/git/repositories/$project/items?path=${Uri.encodeComponent(normalizedPath)}&includeContent=true&api-version=7.0',
+              'accept': 'application/json',
+            });
           } else {
-            apiUrl = '${uri.scheme}://${uri.host}/$project/_apis/git/repositories/$project/items?path=${Uri.encodeComponent(path)}&includeContent=true&api-version=7.0';
+            apiUrl = '${uri.scheme}://${uri.host}/$project/_apis/git/repositories/$project/items?path=${Uri.encodeComponent(normalizedPath)}&includeContent=true&api-version=7.0';
+            debugPrint('🔄 [WIKI] Converted git URL to API (no collection): $apiUrl');
+            
+            // Also try with DefaultCollection
+            attempts.add({
+              'url': '${uri.scheme}://${uri.host}/DefaultCollection/$project/_apis/git/repositories/$project/items?path=${Uri.encodeComponent(normalizedPath)}&includeContent=true&api-version=7.0',
+              'accept': 'application/json',
+            });
           }
-          debugPrint('🔄 [WIKI] Converted git URL to API: $apiUrl');
         }
       }
-      
-      // Try multiple endpoints and headers
-      List<Map<String, String>> attempts = [];
       
       // Add API URL first if converted (prefer API endpoints)
       if (apiUrl != null) {
@@ -178,12 +226,13 @@ class WikiService {
                 if (contentValue != null && contentValue.isNotEmpty) {
                   // Try base64 decode first
                   try {
-                    content = String.fromCharCodes(base64.decode(contentValue));
-                    debugPrint('✅ [WIKI] Decoded base64 content');
+                    final decodedBytes = base64.decode(contentValue);
+                    content = utf8.decode(decodedBytes);
+                    debugPrint('✅ [WIKI] Decoded base64 content (${content.length} chars)');
                   } catch (e) {
                     // Not base64, use as plain text
                     content = contentValue;
-                    debugPrint('✅ [WIKI] Using content as plain text');
+                    debugPrint('✅ [WIKI] Using content as plain text (${content.length} chars)');
                   }
                 }
               } else if (data.containsKey('value')) {

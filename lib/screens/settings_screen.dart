@@ -12,7 +12,6 @@ import 'package:azuredevops_onprem/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/storage_service.dart';
 import '../services/auth_service.dart';
-import 'dart:ui' show Locale;
 
 /// Ayarlar ekranı widget'ı
 /// Uygulama ayarlarını yönetir
@@ -58,11 +57,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final storage = Provider.of<StorageService>(context, listen: false);
-    final wikiUrl = storage.getWikiUrl();
-    _wikiUrlController.text = wikiUrl ?? '';
     
+    // Demo için default değerler
+    const String defaultWikiUrl = 'https://devops.higgscloud.com/Dev/_git/demo?path=/README.md';
+    const String defaultMarketUrl = 'https://devops.higgscloud.com/_static/market';
+    const String defaultServerUrl = 'https://devops.higgscloud.com/Dev';
+    const String defaultToken = 's6znafrrzv35ns24nxpzayw7dt2ro2zn6yaoyp5f7mls23ceq5dq';
+    
+    // Wiki URL - eğer storage'da yoksa default değeri kullan ve kaydet
+    final wikiUrl = storage.getWikiUrl();
+    if (wikiUrl == null || wikiUrl.isEmpty) {
+      await storage.setWikiUrl(defaultWikiUrl);
+      _wikiUrlController.text = defaultWikiUrl;
+    } else {
+      _wikiUrlController.text = wikiUrl;
+    }
+    
+    // Market URL - eğer storage'da yoksa default değeri kullan ve kaydet
     final marketRepoUrl = storage.getMarketRepoUrl();
-    _marketRepoUrlController.text = marketRepoUrl ?? '';
+    if (marketRepoUrl == null || marketRepoUrl.isEmpty) {
+      await storage.setMarketRepoUrl(defaultMarketUrl);
+      _marketRepoUrlController.text = defaultMarketUrl;
+    } else {
+      _marketRepoUrlController.text = marketRepoUrl;
+    }
+    
+    // Server URL ve Token - eğer storage'da yoksa default değerleri ayarla
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentServerUrl = authService.serverUrl;
+    final currentToken = await storage.getToken();
+    
+    // Eğer server URL veya token yoksa, default değerleri ayarla
+    if (currentServerUrl == null || currentToken == null) {
+      // Default değerleri storage'a kaydet
+      await storage.setServerUrl(defaultServerUrl);
+      await storage.setToken(defaultToken);
+      await storage.setAuthType('pat'); // PAT authentication
+      
+      // AuthService'i güncelle
+      await authService.loginWithToken(
+        serverUrl: defaultServerUrl,
+        token: defaultToken,
+      );
+    }
     
     // Load polling interval
     final interval = await storage.getPollingInterval();
@@ -101,6 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _isLoading = true);
 
     final storage = Provider.of<StorageService>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
     final wikiUrl = _wikiUrlController.text.trim();
     
     if (wikiUrl.isNotEmpty) {
@@ -109,8 +147,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (uri == null || !uri.hasScheme) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Geçerli bir URL girin'),
+          SnackBar(
+            content: Text(l10n.invalidUrl),
             backgroundColor: Colors.red,
           ),
         );
@@ -126,8 +164,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (interval == null || interval < 5 || interval > 300) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Polling interval 5-300 saniye arasında olmalıdır'),
+          SnackBar(
+            content: Text(l10n.invalidPollingInterval),
             backgroundColor: Colors.red,
           ),
         );
@@ -147,8 +185,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (uri == null || !uri.hasScheme) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Geçerli bir Market URL girin (örn: https://devops.higgscloud.com/_static/market/)'),
+          SnackBar(
+            content: Text(l10n.invalidMarketUrl),
             backgroundColor: Colors.red,
           ),
         );
@@ -176,10 +214,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ayarlar kaydedildi'),
+      SnackBar(
+        content: Text(l10n.settingsSaved),
         backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -222,26 +260,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Wiki Ayarları',
-                      style: TextStyle(
+                    Text(
+                      l10n.wikiSettings,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Azure DevOps wiki dosyasının URL\'sini girin. Bu wiki içeriği ana sayfada gösterilecektir.',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    Text(
+                      l10n.wikiSettingsDescription,
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _wikiUrlController,
-                      decoration: const InputDecoration(
-                        labelText: 'Wiki URL',
-                        hintText: 'https://devops.higgscloud.com/Dev/demo/_wiki/wikis/CAB-Plan/1/README',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.link),
+                      decoration: InputDecoration(
+                        labelText: l10n.wikiUrl,
+                        hintText: l10n.wikiUrlHint,
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.link),
                       ),
                       keyboardType: TextInputType.url,
                     ),
@@ -254,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Kaydet'),
+                          : Text(l10n.save),
                     ),
                   ],
                 ),
@@ -267,26 +305,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Market Ayarları',
-                      style: TextStyle(
+                    Text(
+                      l10n.marketSettings,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'IIS static dizin URL\'sini girin. Bu dizinden APK ve IPA dosyaları listelenecek ve indirilebilecektir.',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    Text(
+                      l10n.marketSettingsDescription,
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _marketRepoUrlController,
-                      decoration: const InputDecoration(
-                        labelText: 'Market URL',
-                        hintText: 'https://devops.higgscloud.com/_static/market/',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.store),
+                      decoration: InputDecoration(
+                        labelText: l10n.marketUrl,
+                        hintText: l10n.marketUrlHint,
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.store),
                       ),
                       keyboardType: TextInputType.url,
                     ),
@@ -301,9 +339,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Bildirim Ayarları',
-                      style: TextStyle(
+                    Text(
+                      l10n.notificationSettings,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -311,19 +349,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 16),
                     
                     // Polling Interval
-                    const Text(
-                      'Kontrol Sıklığı',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    Text(
+                      l10n.controlFrequency,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _pollingIntervalController,
-                      decoration: const InputDecoration(
-                        labelText: 'Polling Interval (saniye)',
+                      decoration: InputDecoration(
+                        labelText: l10n.pollingInterval,
                         hintText: '15',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.timer),
-                        helperText: '5-300 saniye arası',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.timer),
+                        helperText: l10n.pollingIntervalHelper,
                       ),
                       keyboardType: TextInputType.number,
                     ),
@@ -338,7 +376,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _pollingIntervalController.text = '10';
                               });
                             },
-                            child: const Text('Hızlı (10s)'),
+                            child: Text(l10n.fast),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -350,7 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _pollingIntervalController.text = '15';
                               });
                             },
-                            child: const Text('Normal (15s)'),
+                            child: Text(l10n.normal),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -362,7 +400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _pollingIntervalController.text = '30';
                               });
                             },
-                            child: const Text('Yavaş (30s)'),
+                            child: Text(l10n.slow),
                           ),
                         ),
                       ],
@@ -371,15 +409,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Divider(height: 32),
                     
                     // Bildirim Türleri
-                    const Text(
-                      'Bildirim Türleri',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    Text(
+                      l10n.notificationTypes,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 8),
                     
                     SwitchListTile(
-                      title: const Text('İlk Atamada Bildirim'),
-                      subtitle: const Text('Sadece bana ilk atandığında bildirim gönder'),
+                      title: Text(l10n.notifyOnFirstAssignment),
+                      subtitle: Text(l10n.notifyOnFirstAssignmentDescription),
                       value: _notifyOnFirstAssignment,
                       onChanged: (value) {
                         setState(() => _notifyOnFirstAssignment = value);
@@ -388,8 +426,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     
                     SwitchListTile(
-                      title: const Text('Tüm Güncellemelerde Bildirim'),
-                      subtitle: const Text('Bana atanmış work item\'lar güncellendiğinde bildirim gönder'),
+                      title: Text(l10n.notifyOnAllUpdates),
+                      subtitle: Text(l10n.notifyOnAllUpdatesDescription),
                       value: _notifyOnAllUpdates,
                       onChanged: (value) {
                         setState(() => _notifyOnAllUpdates = value);
@@ -398,8 +436,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     
                     SwitchListTile(
-                      title: const Text('Sadece Hotfix'),
-                      subtitle: const Text('Sadece Hotfix tipindeki work item\'lar için bildirim'),
+                      title: Text(l10n.notifyOnHotfixOnly),
+                      subtitle: Text(l10n.notifyOnHotfixOnlyDescription),
                       value: _notifyOnHotfixOnly,
                       onChanged: (value) {
                         setState(() => _notifyOnHotfixOnly = value);
@@ -411,8 +449,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     
                     // Grup Bildirimleri
                     SwitchListTile(
-                      title: const Text('Grup Atamalarında Bildirim'),
-                      subtitle: const Text('Belirtilen gruplara atama yapıldığında bildirim gönder'),
+                      title: Text(l10n.notifyOnGroupAssignments),
+                      subtitle: Text(l10n.notifyOnGroupAssignmentsDescription),
                       value: _notifyOnGroupAssignments,
                       onChanged: (value) {
                         setState(() => _notifyOnGroupAssignments = value);
@@ -427,11 +465,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Expanded(
                             child: TextField(
                               controller: _groupController,
-                              decoration: const InputDecoration(
-                                labelText: 'Grup Adı',
-                                hintText: 'Örn: Developers, QA Team',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.group),
+                              decoration: InputDecoration(
+                                labelText: l10n.groupName,
+                                hintText: l10n.groupNameHint,
+                                border: const OutlineInputBorder(),
+                                prefixIcon: const Icon(Icons.group),
                               ),
                               onSubmitted: (_) => _addGroup(),
                             ),
@@ -455,9 +493,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           )).toList(),
                         ),
                       if (_notificationGroups.isEmpty)
-                        const Text(
-                          'Henüz grup eklenmedi. Yukarıdan grup adı girerek ekleyin.',
-                          style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                        Text(
+                          l10n.noGroupsAdded,
+                          style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
                         ),
                     ],
                     
@@ -465,8 +503,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     
                     // Akıllı Saat Bildirimleri
                     SwitchListTile(
-                      title: const Text('Akıllı Saat Bildirimleri'),
-                      subtitle: const Text('Akıllı saatlere bildirim gönder (sadece ilk atamada)'),
+                      title: Text(l10n.smartwatchNotifications),
+                      subtitle: Text(l10n.smartwatchNotificationsDescription),
                       value: _enableSmartwatchNotifications,
                       onChanged: (value) {
                         setState(() => _enableSmartwatchNotifications = value);
@@ -478,19 +516,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Divider(height: 32),
                     
                     // Nöbetçi Modu
-                    const Text(
-                      'Nöbetçi Modu',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    Text(
+                      l10n.onCallMode,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Nöbetçi modunda bildirimler daha agresif olur ve okunmayan bildirimler 3 kez yenilenir.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    Text(
+                      l10n.onCallModeDescription,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     const SizedBox(height: 8),
                     SwitchListTile(
-                      title: const Text('Telefon için Nöbetçi Modu'),
-                      subtitle: const Text('Telefonda agresif bildirimler'),
+                      title: Text(l10n.onCallModePhone),
+                      subtitle: Text(l10n.onCallModePhoneDescription),
                       value: _onCallModePhone,
                       onChanged: (value) {
                         setState(() => _onCallModePhone = value);
@@ -499,8 +537,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       secondary: const Icon(Icons.phone),
                     ),
                     SwitchListTile(
-                      title: const Text('Akıllı Saat için Nöbetçi Modu'),
-                      subtitle: const Text('Akıllı saatte agresif bildirimler'),
+                      title: Text(l10n.onCallModeWatch),
+                      subtitle: Text(l10n.onCallModeWatchDescription),
                       value: _onCallModeWatch,
                       onChanged: (value) {
                         setState(() => _onCallModeWatch = value);
@@ -512,19 +550,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Divider(height: 32),
                     
                     // Tatil Modu
-                    const Text(
-                      'Tatil Modu',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    Text(
+                      l10n.vacationMode,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Tatil modunda hiçbir bildirim gelmez.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    Text(
+                      l10n.vacationModeDescription,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     const SizedBox(height: 8),
                     SwitchListTile(
-                      title: const Text('Telefon için Tatil Modu'),
-                      subtitle: const Text('Telefonda bildirimleri devre dışı bırak'),
+                      title: Text(l10n.vacationModePhone),
+                      subtitle: Text(l10n.vacationModePhoneDescription),
                       value: _vacationModePhone,
                       onChanged: (value) {
                         setState(() => _vacationModePhone = value);
@@ -533,8 +571,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       secondary: const Icon(Icons.beach_access),
                     ),
                     SwitchListTile(
-                      title: const Text('Akıllı Saat için Tatil Modu'),
-                      subtitle: const Text('Akıllı saatte bildirimleri devre dışı bırak'),
+                      title: Text(l10n.vacationModeWatch),
+                      subtitle: Text(l10n.vacationModeWatchDescription),
                       value: _vacationModeWatch,
                       onChanged: (value) {
                         setState(() => _vacationModeWatch = value);
@@ -699,7 +737,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Could not open link: $e'),
+                                  content: Text(l10n.couldNotOpenLink(e.toString())),
                                   duration: const Duration(seconds: 3),
                                 ),
                               );

@@ -2,6 +2,42 @@
 
 Bu proje [Semantic Versioning](https://semver.org/) kullanmaktadır.
 
+## [1.2.0] - 21-12-2025
+
+### 🆕 Yeni Özellikler
+
+#### Türkiye Gezi Rehberi İyileştirmeleri
+- ✅ Türkiye gezi rehberi artık iframe olarak gösteriliyor (webview_flutter)
+- ✅ https://www.bizevdeyokuz.com/en/category/europe/turkey/ adresi iframe olarak entegre edildi
+- ✅ WebView ile tam ekran gezi rehberi deneyimi
+- ✅ JavaScript desteği aktif
+- ✅ Loading indicator eklendi
+
+#### Popup Bilgileri Dil Desteği İyileştirmeleri
+- ✅ Tüm desteklenen diller için popup içerikleri düzeltildi
+- ✅ Generic fallback içerikler kaldırıldı (sadece gerçek lokalize içerik gösteriliyor)
+- ✅ Popup başlıkları tüm dillerde doğru şekilde gösteriliyor
+- ✅ Proper noun'lar (özel isimler) Türkçe olarak korunuyor
+
+#### Boolean Custom Field İyileştirmeleri
+- ✅ Boolean field'lar artık SwitchListTile (toggle/switch) olarak gösteriliyor
+- ✅ Boolean field'lar text field olarak gösterilmiyor
+- ✅ Azure web arayüzündeki görünüme benzer şekilde çalışıyor
+
+### 🐛 Hata Düzeltmeleri
+
+#### UI İyileştirmeleri
+- ✅ Versiyon bilgileri kaldırıldı (Azure DevOps logosu altından ve AppBar'dan)
+- ✅ Gereksiz versiyon gösterimleri temizlendi
+- ✅ package_info_plus bağımlılığı kaldırıldı (home_screen.dart'tan)
+
+### 🔧 İyileştirmeler
+
+#### Dependency Updates
+- ✅ webview_flutter: ^4.4.2 eklendi (iframe desteği için)
+
+---
+
 ## [1.1.4] - 21-12-2025
 
 ### 🆕 Yeni Özellikler

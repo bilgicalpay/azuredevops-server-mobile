@@ -688,5 +688,5 @@ Ticari kullanım için lütfen iletişime geçin:
 ---
 
 **Geliştirici:** Alpay Bilgiç  
-**Son Güncelleme:** 24-12-2025  
-**Versiyon:** 1.0.16+111
+**Son Güncelleme:** 25-12-2025  
+**Versiyon:** 1.0.17+112

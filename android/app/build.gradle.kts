@@ -84,7 +84,7 @@ configurations.all {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // Google Play Integrity API for root/jailbreak detection
     implementation("com.google.android.play:integrity:1.4.0")
 }

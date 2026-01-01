@@ -95,6 +95,25 @@ subprojects {
                 println("⚠️  Could not set Java compatibility for root_detector: ${e.message}")
             }
         }
+        
+        // Fix file_picker JVM target compatibility
+        if (project.name == "file_picker") {
+            try {
+                val android = project.extensions.findByName("android")
+                if (android != null) {
+                    val androidExtension = android as? com.android.build.gradle.BaseExtension
+                    if (androidExtension != null) {
+                        // Force Java 17 for file_picker
+                        androidExtension.compileOptions {
+                            sourceCompatibility = org.gradle.api.JavaVersion.VERSION_17
+                            targetCompatibility = org.gradle.api.JavaVersion.VERSION_17
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println("⚠️  Could not set Java compatibility for file_picker: ${e.message}")
+            }
+        }
     }
 }
 

@@ -643,7 +643,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       title: 'CAB',
                       icon: Icons.info_outline,
                       color: Colors.teal,
-                      onTap: () {
+                      onTap: () async {
+                        final storage = Provider.of<StorageService>(context, listen: false);
+                        final wikiUrl = storage.getWikiUrl();
+                        
+                        // Wiki URL ayarlanmamışsa settings'e yönlendir
+                        if (wikiUrl == null || wikiUrl.isEmpty) {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingsScreen(),
+                            ),
+                          );
+                          // Settings'ten dönünce wiki'yi yeniden yükle
+                          if (result == true || mounted) {
+                            await _loadWikiContent();
+                          }
+                          return;
+                        }
+                        
+                        // Wiki içeriği varsa göster
                         if (_wikiContent != null && _wikiContent!.isNotEmpty) {
                           Navigator.push(
                             context,
@@ -654,14 +673,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               ),
                             ),
                           );
+                        } else if (_isLoadingWiki) {
+                          // Wiki yükleniyor
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Wiki içeriği yükleniyor...'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
                         } else {
-                          // Wiki yükleniyorsa veya yoksa hata mesajı göster
+                          // Wiki yüklenemedi, yeniden dene
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: const Text('Wiki içeriği yüklenemedi veya ayarlanmamış'),
+                              content: const Text('Wiki içeriği yüklenemedi. Lütfen tekrar deneyin.'),
                               action: SnackBarAction(
                                 label: 'Yenile',
-                                onPressed: _loadWikiContent,
+                                onPressed: () async {
+                                  await _loadWikiContent();
+                                  if (mounted && _wikiContent != null && _wikiContent!.isNotEmpty) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => WikiViewerScreen(
+                                          wikiContent: _wikiContent!,
+                                          wikiTitle: 'Wiki',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
                             ),
                           );
